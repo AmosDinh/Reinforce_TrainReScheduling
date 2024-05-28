@@ -4,14 +4,8 @@
 
 We seek to minimize the time it takes to bring all the agents to their respective target.
 
-Freeze conda env to .yaml
+# Usage
 
-    env export --no-builds > environment.yml
+    conda create --name rl python=3.10.14
 
-Create conda env from .yaml
-
-    conda env create -f environment.yml
-
-Update conda env with .yaml
-
-    conda env update --file environment.yml --prune
+    pip install -r requirements.txt
