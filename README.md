@@ -1,8 +1,12 @@
 # Reinforce_TrainReScheduling
 
+# Ziel
+
+We seek to minimize the time it takes to bring all the agents to their respective target.
+
 Freeze conda env to .yaml
 
-    conda env export --name rl > environment.yml
+    env export --no-builds > environment.yml
 
 Create conda env from .yaml
 
