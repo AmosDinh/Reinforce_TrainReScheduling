@@ -1,0 +1,6 @@
+amos/flatland-master/*
+**/wandb/*
+**/checkpoints/*
+*.DS_Store
+**/__pycache__/*
+**/*.pyc
