@@ -28,11 +28,11 @@ from utils.timer import Timer
 from utils.observation_utils import normalize_observation
 from reinforcement_learning.dddqn_policy import DDDQNPolicy
 
-try:
-    import wandb
-    wandb.init(sync_tensorboard=True)
-except ImportError:
-    print("Install wandb to log to Weights & Biases")
+# try:
+#     import wandb
+#     wandb.init(sync_tensorboard=True)
+# except ImportError:
+#     print("Install wandb to log to Weights & Biases")
 
 """
 This file shows how to train multiple agents using a reinforcement learning approach.
