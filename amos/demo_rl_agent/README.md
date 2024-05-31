@@ -1,4 +1,6 @@
-🚂 Starter Kit - NeurIPS 2020 Flatland Challenge
+change to demo_rl_agent as root folder and run multi_agent_training.py or single_agent_training.py
+
+<!-- 🚂 Starter Kit - NeurIPS 2020 Flatland Challenge
 ===
 
 This starter kit contains 2 example policies to get started with this challenge: 
@@ -104,4 +106,4 @@ Credits
 Main links
 ---
 
-* [Flatland documentation](https://flatland.aicrowd.com/)
+* [Flatland documentation](https://flatland.aicrowd.com/) -->
