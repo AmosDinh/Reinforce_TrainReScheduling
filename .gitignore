@@ -4,3 +4,4 @@ amos/flatland-master/*
 *.DS_Store
 **/__pycache__/*
 **/*.pyc
+**/runs/*
