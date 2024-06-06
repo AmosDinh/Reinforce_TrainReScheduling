@@ -15,3 +15,6 @@ Key auf Whatsapp (wird beim ersten ausführen nachgefragt, ansonsten auf linux: 
 Loggt einfach die Tensorboard runs (benutzt den tensorboard syntax mit: writer.add_scalar(...)) <br>
 Für einen run kann der Run-Name angepasst werden in multi_agent_training.py: <br>
 `wandb.init(sync_tensorboard=True, name="flatland-rl_run1", project='Reinforce_TrainRescheduling')`
+
+<br>
+Link: [https://wandb.ai/Reinforce_Team/Reinforce_TrainRescheduling](https://wandb.ai/Reinforce_Team/Reinforce_TrainRescheduling)

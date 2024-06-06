@@ -30,7 +30,7 @@ from reinforcement_learning.dddqn_policy import DDDQNPolicy
 
 try:
     import wandb
-    wandb.init(sync_tensorboard=True, name="flatland-rl_run1", project='Reinforce_TrainRescheduling')
+    wandb.init(sync_tensorboard=True, name="flatland-rl_run123", project='Reinforce_TrainRescheduling')
 except ImportError:
     print("Install wandb to log to Weights & Biases")
 
