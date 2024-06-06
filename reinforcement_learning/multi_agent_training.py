@@ -28,11 +28,11 @@ from utils.timer import Timer
 from utils.observation_utils import normalize_observation
 from reinforcement_learning.dddqn_policy import DDDQNPolicy
 
-# try:
-#     import wandb
-#     wandb.init(sync_tensorboard=True)
-# except ImportError:
-#     print("Install wandb to log to Weights & Biases")
+try:
+    import wandb
+    wandb.init(sync_tensorboard=True, name="flatland-rl_run1", project='Reinforce_TrainRescheduling')
+except ImportError:
+    print("Install wandb to log to Weights & Biases")
 
 """
 This file shows how to train multiple agents using a reinforcement learning approach.
@@ -153,7 +153,9 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         print("⚠️  Careful! Saving replay buffers will quickly consume a lot of disk space. You have {:.2f}gb left.".format(hdd.free / (2 ** 30)))
 
     # TensorBoard writer
+    # writer = SummaryWriter()
     writer = SummaryWriter()
+  
     writer.add_hparams(vars(train_params), {})
     writer.add_hparams(vars(train_env_params), {})
     writer.add_hparams(vars(obs_params), {})

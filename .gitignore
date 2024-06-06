@@ -5,3 +5,4 @@ amos/flatland-master/*
 **/__pycache__/*
 **/*.pyc
 **/runs/*
+ amos/demo_rl_agent/utils/__pycache__/*
