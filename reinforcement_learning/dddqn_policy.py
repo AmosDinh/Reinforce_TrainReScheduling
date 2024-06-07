@@ -36,12 +36,15 @@ class DDDQNPolicy(Policy):
             self.buffer_min_size = parameters.buffer_min_size
 
         # Device
-        if parameters.use_gpu and torch.cuda.is_available():
+        if torch.backends.mps.is_available() and False:
+            self.device = torch.device("mps")
+            print("🔥 Using MPS (multi-process service) for PyTorch on GPU")
+        if torch.cuda.is_available():
             self.device = torch.device("cuda:0")
-            # print("🐇 Using GPU")
+            print("🔥 Using GPU for PyTorch")
         else:
             self.device = torch.device("cpu")
-            # print("🐢 Using CPU")
+            print("🐌 Using CPU for PyTorch")
 
         # Q-Network
         self.qnetwork_local = DuelingQNetwork(state_size, action_size, hidsize1=self.hidsize, hidsize2=self.hidsize).to(self.device)
@@ -83,7 +86,7 @@ class DDDQNPolicy(Policy):
     def _learn(self):
         experiences = self.memory.sample()
         states, actions, rewards, next_states, dones = experiences
-
+        
         # Get expected Q values from local model
         q_expected = self.qnetwork_local(states).gather(1, actions)
 

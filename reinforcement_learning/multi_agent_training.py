@@ -30,9 +30,15 @@ from reinforcement_learning.dddqn_policy import DDDQNPolicy
 
 try:
     import wandb
-    wandb.init(sync_tensorboard=True, name="flatland-rl_run123", project='Reinforce_TrainRescheduling')
+    wandb.init(
+        mode='disabled',
+        sync_tensorboard=True, 
+        name="flatland-rl_run123", 
+        project='Reinforce_TrainRescheduling')
+    
 except ImportError:
     print("Install wandb to log to Weights & Biases")
+
 
 """
 This file shows how to train multiple agents using a reinforcement learning approach.
@@ -135,6 +141,8 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
     # Double Dueling DQN policy
     policy = DDDQNPolicy(state_size, action_size, train_params)
+    
+
 
     # Loads existing replay buffer
     if restore_replay_buffer:
@@ -162,6 +170,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
     training_timer = Timer()
     training_timer.start()
+     
 
     print("\n🚉 Training {} trains on {}x{} grid for {} episodes, evaluating on {} episodes every {} episodes. Training id '{}'.\n".format(
         n_agents,
@@ -249,6 +258,9 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
                     agent_prev_obs[agent] = agent_obs[agent].copy()
                     agent_prev_action[agent] = action_dict[agent]
 
+                    # make new variable
+                    
+
                 # Preprocess the new observations
                 if next_obs[agent]:
                     preproc_timer.start()
@@ -297,22 +309,32 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
             if train_params.render:
                 env_renderer.close_window()
-
+        # ⏱️ Rst 0.023st 0 Stp 0.076sp 0.0 Lrn 0.241sn 0.1 Prc 0.022sc 0.0 Tot 68.886s 
         print(
-            '\r🚂 Episode {}'
+            '\r🚂 Ep {}'
             '\t 🏆 Score: {:.3f}'
             ' Avg: {:.3f}'
-            '\t 💯 Done: {:.2f}%'
+            '\t Done: {:.2f}%'
             ' Avg: {:.2f}%'
-            '\t 🎲 Epsilon: {:.3f} '
-            '\t 🔀 Action Probs: {}'.format(
+            '\t 🎲 ϵ: {:.3f} '
+            '\t 🔀 Action Prob.: {}'
+            '\t ⏱️ Rst {:.3f}s'
+            '\t Step {:.3f}s'
+            '\t Lrn {:.3f}s'
+            '\t Preproc {:.3f}s'
+            '\t Tot {:.3f}s'.format(
                 episode_idx,
                 normalized_score,
                 smoothed_normalized_score,
                 100 * completion,
                 100 * smoothed_completion,
                 eps_start,
-                format_action_prob(action_probs)
+                format_action_prob(action_probs),
+                reset_timer.get(),
+                step_timer.get(),
+                learn_timer.get(),
+                preproc_timer.get(),
+                training_timer.get_current()
             ), end=" ")
 
         # Evaluate policy and log results at some interval
