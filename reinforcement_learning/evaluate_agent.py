@@ -14,7 +14,8 @@ from flatland.envs.observations import TreeObsForRailEnv
 from flatland.envs.predictions import ShortestPathPredictorForRailEnv
 from flatland.envs.rail_env import RailEnv
 from flatland.envs.rail_generators import sparse_rail_generator
-from flatland.envs.schedule_generators import sparse_schedule_generator
+# from flatland.envs.schedule_generators import sparse_schedule_generator
+from flatland.envs.line_generators import sparse_line_generator
 from flatland.utils.rendertools import RenderTool
 
 base_dir = Path(__file__).resolve().parent.parent
@@ -43,7 +44,7 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
     y_dim = env_params.y_dim
     n_cities = env_params.n_cities
     max_rails_between_cities = env_params.max_rails_between_cities
-    max_rails_in_city = env_params.max_rails_in_city
+    max_rail_pairs_in_city = env_params.max_rail_pairs_in_city
 
     # Malfunction and speed profiles
     # TODO pass these parameters properly from main!
@@ -77,9 +78,10 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
             max_num_cities=n_cities,
             grid_mode=False,
             max_rails_between_cities=max_rails_between_cities,
-            max_rails_in_city=max_rails_in_city,
+            max_rail_pairs_in_city=max_rail_pairs_in_city,
         ),
-        schedule_generator=sparse_schedule_generator(speed_profiles),
+        # schedule_generator=sparse_schedule_generator(speed_profiles),
+        line_generator=sparse_line_generator(speed_profiles),
         number_of_agents=n_agents,
         malfunction_generator_and_process_data=malfunction_from_params(malfunction_parameters),
         obs_builder_object=tree_observation
@@ -238,71 +240,50 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
 
     # Observation parameters need to match the ones used during training!
 
-    # small_v0
-    small_v0_params = {
-        # sample configuration
-        "n_agents": 5,
-        "x_dim": 25,
-        "y_dim": 25,
-        "n_cities": 4,
-        "max_rails_between_cities": 2,
-        "max_rails_in_city": 3,
-
-        # observations
+    env_params = [
+        {
+            # Test_0
+            "n_agents": 5,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 2,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 1,
+            "malfunction_rate": 1 / 50,
+            "seed": 0
+        },
+        {
+            # Test_1
+            "n_agents": 10,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 2,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 100,
+            "seed": 0
+        },
+        {
+            # Test_2
+            "n_agents": 20,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+    ]
+    obs_params = {
         "observation_tree_depth": 2,
         "observation_radius": 10,
-        "observation_max_path_depth": 20
+        "observation_max_path_depth": 30
     }
 
-    # Test_0
-    test0_params = {
-        # sample configuration
-        "n_agents": 5,
-        "x_dim": 25,
-        "y_dim": 25,
-        "n_cities": 2,
-        "max_rails_between_cities": 2,
-        "max_rails_in_city": 3,
-
-        # observations
-        "observation_tree_depth": 2,
-        "observation_radius": 10,
-        "observation_max_path_depth": 20
-    }
-
-    # Test_1
-    test1_params = {
-        # environment
-        "n_agents": 10,
-        "x_dim": 30,
-        "y_dim": 30,
-        "n_cities": 2,
-        "max_rails_between_cities": 2,
-        "max_rails_in_city": 3,
-
-        # observations
-        "observation_tree_depth": 2,
-        "observation_radius": 10,
-        "observation_max_path_depth": 10
-    }
-
-    # Test_5
-    test5_params = {
-        # environment
-        "n_agents": 80,
-        "x_dim": 35,
-        "y_dim": 35,
-        "n_cities": 5,
-        "max_rails_between_cities": 2,
-        "max_rails_in_city": 4,
-
-        # observations
-        "observation_tree_depth": 2,
-        "observation_radius": 10,
-        "observation_max_path_depth": 20
-    }
-
-    params = small_v0_params
+    params_temp = env_params[0]
+    params = {**params_temp, **obs_params}
+    
     env_params = Namespace(**params)
 
     print("Environment parameters:")
