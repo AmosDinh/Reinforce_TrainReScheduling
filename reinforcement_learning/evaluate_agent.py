@@ -6,7 +6,7 @@ from argparse import ArgumentParser, Namespace
 from multiprocessing import Pool
 from pathlib import Path
 from pprint import pprint
-
+import time 
 import numpy as np
 import torch
 from flatland.envs.malfunction_generators import malfunction_from_params, MalfunctionParameters
@@ -27,7 +27,7 @@ from utils.observation_utils import normalize_observation
 from reinforcement_learning.dddqn_policy import DDDQNPolicy
 
 
-def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size, state_size, seed, render, allow_skipping, allow_caching):
+def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size, state_size, seed, render, allow_skipping, allow_caching, renderspeed):
     # Evaluation is faster on CPU (except if you use a really huge policy)
     parameters = {
         'use_gpu': False
@@ -179,6 +179,9 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
             if done['__all__']:
                 break
 
+            if renderspeed != 0:
+                time.sleep(renderspeed/1000)
+
         normalized_score = score / (max_steps * env.get_num_agents())
         scores.append(normalized_score)
 
@@ -224,7 +227,7 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
     return scores, completions, nb_steps, agent_times, step_times
 
 
-def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping, allow_caching):
+def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping, allow_caching, renderspeed):
     nb_threads = 1
     eval_per_thread = n_evaluation_episodes
 
@@ -283,7 +286,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
 
     params_temp = env_params[0]
     params = {**params_temp, **obs_params}
-    
+
     env_params = Namespace(**params)
 
     print("Environment parameters:")
@@ -300,14 +303,14 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
 
     results = []
     if render:
-        results.append(eval_policy(params, file, eval_per_thread, max_steps, action_size, state_size, 0, render, allow_skipping, allow_caching))
+        results.append(eval_policy(params, file, eval_per_thread, max_steps, action_size, state_size, 0, render, allow_skipping, allow_caching, renderspeed))
 
     else:
         with Pool() as p:
             results = p.starmap(eval_policy,
-                                [(params, file, 1, max_steps, action_size, state_size, seed * nb_threads, render, allow_skipping, allow_caching)
+                                [(params, file, 1, max_steps, action_size, state_size, seed * nb_threads, render, allow_skipping, allow_caching, renderspeed)
                                  for seed in
-                                 range(total_nb_eval)])
+                                 range(total_nb_eval)],)
 
     scores = []
     completions = []
@@ -350,8 +353,9 @@ if __name__ == "__main__":
     parser.add_argument("--render", help="render a single episode", action='store_true')
     parser.add_argument("--allow_skipping", help="skips to the end of the episode if all agents are deadlocked", action='store_true')
     parser.add_argument("--allow_caching", help="caches the last observation-action pair", action='store_true')
+    parser.add_argument("--renderspeed", help="render speed for visualization in milliseconds", default=0, type=int) # erlaubt es langsamer zu rendern
     args = parser.parse_args()
 
     os.environ["OMP_NUM_THREADS"] = str(1)
     evaluate_agents(file=args.file, n_evaluation_episodes=args.n_evaluation_episodes, use_gpu=args.use_gpu, render=args.render,
-                    allow_skipping=args.allow_skipping, allow_caching=args.allow_caching)
+                    allow_skipping=args.allow_skipping, allow_caching=args.allow_caching, renderspeed=args.renderspeed)
