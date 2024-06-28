@@ -154,7 +154,23 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
                     if allow_caching:
                         agent_last_obs[agent] = obs[agent]
                         agent_last_action[agent] = action
+
             agent_timer.end()
+            amos = True
+            if render and amos:
+                img = env_renderer.render_env(
+                    show=True,
+                    frames=False,
+                    show_observations=False,
+                    show_predictions=True,
+                    show_rowcols=False,
+                    show_inactive_agents=True,
+                    return_image=True
+                )
+                from PIL import Image
+                if step ==5:
+                    Image.fromarray(img).show()
+                    awdwad = 3
 
             step_timer.start()
             obs, all_rewards, done, info = env.step(action_dict)
@@ -165,9 +181,10 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
                     show=True,
                     frames=False,
                     show_observations=False,
-                    show_predictions=False
+                    show_predictions=False,
+                    show_inactive_agents=False
+                    # return_image=True
                 )
-
                 if step % 100 == 0:
                     print("{}/{}".format(step, max_steps - 1))
 
@@ -246,7 +263,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
     env_params = [
         {
             # Test_0
-            "n_agents": 5,
+            "n_agents": 3,
             "x_dim": 30,
             "y_dim": 30,
             "n_cities": 2,
@@ -343,16 +360,16 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("-f", "--file", help="checkpoint to load", required=True, type=str)
+    parser.add_argument("-f", "--file", help="checkpoint to load", type=str, default="checkpoints/240628093349-1900.pth") # , required=True
     parser.add_argument("-n", "--n_evaluation_episodes", help="number of evaluation episodes", default=25, type=int)
 
     # TODO
     # parser.add_argument("-e", "--evaluation_env_config", help="evaluation config id (eg 0 for Test_0)", default=0, type=int)
 
-    parser.add_argument("--use_gpu", dest="use_gpu", help="use GPU if available", action='store_true')
-    parser.add_argument("--render", help="render a single episode", action='store_true')
-    parser.add_argument("--allow_skipping", help="skips to the end of the episode if all agents are deadlocked", action='store_true')
-    parser.add_argument("--allow_caching", help="caches the last observation-action pair", action='store_true')
+    parser.add_argument("--use_gpu", dest="use_gpu", help="use GPU if available", action='store_true', default=True)
+    parser.add_argument("--render", help="render a single episode", action='store_true', default=True)
+    parser.add_argument("--allow_skipping", help="skips to the end of the episode if all agents are deadlocked", action='store_true', default=True)
+    parser.add_argument("--allow_caching", help="caches the last observation-action pair", action='store_true', default=True)
     parser.add_argument("--renderspeed", help="render speed for visualization in milliseconds", default=0, type=int) # erlaubt es langsamer zu rendern
     args = parser.parse_args()
 
