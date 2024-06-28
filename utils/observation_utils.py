@@ -32,7 +32,7 @@ def min_gt(seq, val):
 
 def norm_obs_clip(obs, clip_min=-1, clip_max=1, fixed_radius=0, normalize_to_range=False):
     """returns
-    This function  the difference between min and max value of an observation
+    This function returns the difference between min and max value of an observation
     :param obs: Observation that should be normalized
     :param clip_min: min value where observation will be clipped
     :param clip_max: max value where observation will be clipped
@@ -41,7 +41,7 @@ def norm_obs_clip(obs, clip_min=-1, clip_max=1, fixed_radius=0, normalize_to_ran
     if fixed_radius > 0:
         max_obs = fixed_radius
     else:
-        max_obs = max(1, max_lt(obs, 1000)) + 1
+        max_obs = max(1, max_lt(obs, 1000)) + 1 
 
     min_obs = 0  # min(max_obs, min_gt(obs, 0))
     if normalize_to_range:
@@ -116,10 +116,17 @@ def normalize_observation(observation, tree_depth: int, observation_radius=0):
     """
     This function normalizes the observation used by the RL algorithm
     """
+    # data contains the features (6 per node)
+    # it could look like this:
+    # [6*features node 1, 6*features node 1.1, n1.1.1, n.1.1.2, n1.2, n1.3, n1.4]
+    # meaning features are concatenated (one dimension only), and  node 1.1.s children are listed before node 1.2, 1.3, 1.4
+    # distance contains min distance to target 
+    # agend data contains information about other agents
     data, distance, agent_data = split_tree_into_feature_groups(observation, tree_depth)
 
     data = norm_obs_clip(data, fixed_radius=observation_radius)
     distance = norm_obs_clip(distance, normalize_to_range=True)
+    # why clip here e.g. num agents to -1, 1?
     agent_data = np.clip(agent_data, -1, 1)
     normalized_obs = np.concatenate((np.concatenate((data, distance)), agent_data))
     return normalized_obs

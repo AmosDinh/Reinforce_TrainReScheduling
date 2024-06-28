@@ -30,10 +30,15 @@ from reinforcement_learning.dddqn_policy import DDDQNPolicy
 
 try:
     import wandb
+
+    # runname = 'flatland-rl_run123' # specify your run name
+    # if not runname or runname == 'flatland-rl_run123':
+    #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
+    
     wandb.init(
-        mode='disabled',
+        mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
         sync_tensorboard=True, 
-        name="flatland-rl_run123", 
+        # name=runname, 
         project='Reinforce_TrainRescheduling')
     
 except ImportError:
@@ -127,7 +132,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
     # Calculate the state size given the depth of the tree observation and the number of features
     n_features_per_node = train_env.obs_builder.observation_dim
-    n_nodes = sum([np.power(4, i) for i in range(observation_tree_depth + 1)])
+    n_nodes = sum([np.power(4, i) for i in range(observation_tree_depth + 1)]) # level 0 = 4**0, level 1 = 4**1, ...
     state_size = n_features_per_node * n_nodes
 
     # The action space of flatland is 5 discrete actions
@@ -220,7 +225,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
             inference_timer.start()
             for agent in train_env.get_agent_handles():
                 if info['action_required'][agent]:
-                    update_values[agent] = True
+                    update_values[agent] = True  # only learn from timesteps where somethings happened
                     action = policy.act(agent_obs[agent], eps=eps_start)
 
                     action_count[action] += 1
@@ -228,8 +233,9 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
                 else:
                     # An action is not required if the train hasn't joined the railway network,
                     # if it already reached its target, or if is currently malfunctioning.
-                    update_values[agent] = False
+                    update_values[agent] = False # only learn from timesteps where somethings happened
                     action = 0
+
                 action_dict.update({agent: action})
             inference_timer.end()
 
@@ -280,7 +286,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         # Collect information about training
         tasks_finished = sum([agent.state == TrainState.DONE for agent in train_env.agents])
         completion = tasks_finished / max(1, train_env.get_num_agents())
-        normalized_score = score / (max_steps * train_env.get_num_agents())
+        normalized_score = score / (max_steps * train_env.get_num_agents()) #
 
         # if no actions were ever taken possibly due to malfunction and so 
         # - `actions_taken` is empty [], 
