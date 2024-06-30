@@ -6,7 +6,7 @@ from argparse import ArgumentParser, Namespace
 from multiprocessing import Pool
 from pathlib import Path
 from pprint import pprint
-
+import time 
 import numpy as np
 import torch
 from flatland.envs.malfunction_generators import malfunction_from_params, MalfunctionParameters
@@ -27,7 +27,7 @@ from utils.observation_utils import normalize_observation
 from reinforcement_learning.dddqn_policy import DDDQNPolicy
 
 
-def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size, state_size, seed, render, allow_skipping, allow_caching):
+def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size, state_size, seed, render, allow_skipping, allow_caching, renderspeed):
     # Evaluation is faster on CPU (except if you use a really huge policy)
     parameters = {
         'use_gpu': False
@@ -154,7 +154,23 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
                     if allow_caching:
                         agent_last_obs[agent] = obs[agent]
                         agent_last_action[agent] = action
+
             agent_timer.end()
+            amos = True
+            if render and amos:
+                img = env_renderer.render_env(
+                    show=True,
+                    frames=False,
+                    show_observations=False,
+                    show_predictions=True,
+                    show_rowcols=False,
+                    show_inactive_agents=True,
+                    return_image=True
+                )
+                from PIL import Image
+                if step ==5:
+                    Image.fromarray(img).show()
+                    awdwad = 3
 
             step_timer.start()
             obs, all_rewards, done, info = env.step(action_dict)
@@ -165,9 +181,10 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
                     show=True,
                     frames=False,
                     show_observations=False,
-                    show_predictions=False
+                    show_predictions=False,
+                    show_inactive_agents=False
+                    # return_image=True
                 )
-
                 if step % 100 == 0:
                     print("{}/{}".format(step, max_steps - 1))
 
@@ -178,6 +195,9 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
 
             if done['__all__']:
                 break
+
+            if renderspeed != 0:
+                time.sleep(renderspeed/1000)
 
         normalized_score = score / (max_steps * env.get_num_agents())
         scores.append(normalized_score)
@@ -224,7 +244,7 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
     return scores, completions, nb_steps, agent_times, step_times
 
 
-def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping, allow_caching):
+def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping, allow_caching, renderspeed):
     nb_threads = 1
     eval_per_thread = n_evaluation_episodes
 
@@ -478,12 +498,13 @@ if __name__ == "__main__":
     # TODO
     # parser.add_argument("-e", "--evaluation_env_config", help="evaluation config id (eg 0 for Test_0)", default=0, type=int)
 
-    parser.add_argument("--use_gpu", dest="use_gpu", help="use GPU if available", action='store_true')
-    parser.add_argument("--render", help="render a single episode", action='store_true')
-    parser.add_argument("--allow_skipping", help="skips to the end of the episode if all agents are deadlocked", action='store_true')
-    parser.add_argument("--allow_caching", help="caches the last observation-action pair", action='store_true')
+    parser.add_argument("--use_gpu", dest="use_gpu", help="use GPU if available", action='store_true', default=True)
+    parser.add_argument("--render", help="render a single episode", action='store_true', default=True)
+    parser.add_argument("--allow_skipping", help="skips to the end of the episode if all agents are deadlocked", action='store_true', default=True)
+    parser.add_argument("--allow_caching", help="caches the last observation-action pair", action='store_true', default=True)
+    parser.add_argument("--renderspeed", help="render speed for visualization in milliseconds", default=0, type=int) # erlaubt es langsamer zu rendern
     args = parser.parse_args()
 
     os.environ["OMP_NUM_THREADS"] = str(1)
     evaluate_agents(file=args.file, n_evaluation_episodes=args.n_evaluation_episodes, use_gpu=args.use_gpu, render=args.render,
-                    allow_skipping=args.allow_skipping, allow_caching=args.allow_caching)
+                    allow_skipping=args.allow_skipping, allow_caching=args.allow_caching, renderspeed=args.renderspeed)
