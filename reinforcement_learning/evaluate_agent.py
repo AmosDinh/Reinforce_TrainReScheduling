@@ -56,10 +56,10 @@ def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size,
 
     # Only fast trains in Round 1
     speed_profiles = {
-        1.: 1.0,  # Fast passenger train
-        1. / 2.: 0.0,  # Fast freight train
-        1. / 3.: 0.0,  # Slow commuter train
-        1. / 4.: 0.0  # Slow freight train
+        1.: 0.6,  # Fast passenger train
+        1. / 2.: 0.2,  # Fast freight train
+        1. / 3.: 0.1,  # Slow commuter train
+        1. / 4.: 0.1  # Slow freight train
     }
 
     # Observation parameters
@@ -263,13 +263,13 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
     env_params = [
         {
             # Test_0
-            "n_agents": 3,
+            "n_agents": 7,
             "x_dim": 30,
             "y_dim": 30,
             "n_cities": 2,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 1,
-            "malfunction_rate": 1 / 50,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 0,
             "seed": 0
         },
         {
@@ -294,6 +294,138 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
+        {
+            # Test_3
+            "n_agents": 50,
+            "x_dim": 30,
+            "y_dim": 35,
+            "n_cities": 3,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 400,
+            "seed": 0
+        },
+        {
+            # Test_4
+            "n_agents": 80,
+            "x_dim": 35,
+            "y_dim": 30,
+            "n_cities": 5,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_5
+            "n_agents": 80,
+            "x_dim": 45,
+            "y_dim": 35,
+            "n_cities": 7,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_6
+            "n_agents": 80,
+            "x_dim": 40,
+            "y_dim": 60,
+            "n_cities": 9,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_7
+            "n_agents": 80,
+            "x_dim": 60,
+            "y_dim": 40,
+            "n_cities": 13,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_8
+            "n_agents": 80,
+            "x_dim": 60,
+            "y_dim": 60,
+            "n_cities": 17,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_9
+            "n_agents": 100,
+            "x_dim": 80,
+            "y_dim": 120,
+            "n_cities": 21,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_10
+            "n_agents": 100,
+            "x_dim": 100,
+            "y_dim": 80,
+            "n_cities": 25,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_11
+            "n_agents": 200,
+            "x_dim": 100,
+            "y_dim": 100,
+            "n_cities": 29,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_12
+            "n_agents": 200,
+            "x_dim": 150,
+            "y_dim": 150,
+            "n_cities": 33,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_13
+            "n_agents": 400,
+            "x_dim": 150,
+            "y_dim": 150,
+            "n_cities": 37,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_14
+            "n_agents": 425,
+            "x_dim": 158,
+            "y_dim": 158,
+            "n_cities": 41,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
     ]
     obs_params = {
         "observation_tree_depth": 2,
@@ -301,67 +433,67 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
         "observation_max_path_depth": 30
     }
 
-    params_temp = env_params[0]
-    params = {**params_temp, **obs_params}
+    for i, env_config in enumerate(env_params):
+            print(i, env_config)
+            params_temp = env_params[i]
+            params = {**params_temp, **obs_params}
+            
+            current_env_params = Namespace(**params)
 
-    env_params = Namespace(**params)
+            print("Environment parameters:")
+            pprint(params)
 
-    print("Environment parameters:")
-    pprint(params)
+            # Calculate space dimensions and max steps
+            max_steps = int(4 * 2 * (current_env_params.x_dim + current_env_params.y_dim + (current_env_params.n_agents / current_env_params.n_cities)))
+            action_size = 5
+            tree_observation = TreeObsForRailEnv(max_depth=current_env_params.observation_tree_depth)
+            tree_depth = current_env_params.observation_tree_depth
+            num_features_per_node = tree_observation.observation_dim
+            n_nodes = sum([np.power(4, i) for i in range(tree_depth + 1)])
+            state_size = num_features_per_node * n_nodes
 
-    # Calculate space dimensions and max steps
-    max_steps = int(4 * 2 * (env_params.x_dim + env_params.y_dim + (env_params.n_agents / env_params.n_cities)))
-    action_size = 5
-    tree_observation = TreeObsForRailEnv(max_depth=env_params.observation_tree_depth)
-    tree_depth = env_params.observation_tree_depth
-    num_features_per_node = tree_observation.observation_dim
-    n_nodes = sum([np.power(4, i) for i in range(tree_depth + 1)])
-    state_size = num_features_per_node * n_nodes
+            results = []
+            if render:
+                results.append(eval_policy(params, file, eval_per_thread, max_steps, action_size, state_size, 0, render, allow_skipping, allow_caching))
+            else:
+                with Pool() as p:
+                    results = p.starmap(eval_policy,
+                                        [(params, file, 1, max_steps, action_size, state_size, seed * nb_threads, render, allow_skipping, allow_caching)
+                                        for seed in range(total_nb_eval)])
 
-    results = []
-    if render:
-        results.append(eval_policy(params, file, eval_per_thread, max_steps, action_size, state_size, 0, render, allow_skipping, allow_caching, renderspeed))
+            scores = []
+            completions = []
+            nb_steps = []
+            times = []
+            step_times = []
+            for s, c, n, t, st in results:
+                scores.append(s)
+                completions.append(c)
+                nb_steps.append(n)
+                times.append(t)
+                step_times.append(st)
 
-    else:
-        with Pool() as p:
-            results = p.starmap(eval_policy,
-                                [(params, file, 1, max_steps, action_size, state_size, seed * nb_threads, render, allow_skipping, allow_caching, renderspeed)
-                                 for seed in
-                                 range(total_nb_eval)],)
+            print("-" * 200)
 
-    scores = []
-    completions = []
-    nb_steps = []
-    times = []
-    step_times = []
-    for s, c, n, t, st in results:
-        scores.append(s)
-        completions.append(c)
-        nb_steps.append(n)
-        times.append(t)
-        step_times.append(st)
+            print("✅ Score: {:.3f} \tDone: {:.1f}% \tNb steps: {:.3f} \tAgent total: {:.3f}s (per step: {:.3f}s)".format(
+                np.mean(scores),
+                np.mean(completions) * 100.0,
+                np.mean(nb_steps),
+                np.mean(times),
+                np.mean(times) / np.mean(nb_steps)
+            ))
 
-    print("-" * 200)
-
-    print("✅ Score: {:.3f} \tDone: {:.1f}% \tNb steps: {:.3f} \tAgent total: {:.3f}s (per step: {:.3f}s)".format(
-        np.mean(scores),
-        np.mean(completions) * 100.0,
-        np.mean(nb_steps),
-        np.mean(times),
-        np.mean(times) / np.mean(nb_steps)
-    ))
-
-    print("⏲️  Agent sum: {:.3f}s \tEnv sum: {:.3f}s \tTotal sum: {:.3f}s".format(
-        np.sum(times),
-        np.sum(step_times),
-        np.sum(times) + np.sum(step_times)
-    ))
+            print("⏲️  Agent sum: {:.3f}s \tEnv sum: {:.3f}s \tTotal sum: {:.3f}s".format(
+                np.sum(times),
+                np.sum(step_times),
+                np.sum(times) + np.sum(step_times)
+            ))
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("-f", "--file", help="checkpoint to load", type=str, default="checkpoints/240628093349-1900.pth") # , required=True
-    parser.add_argument("-n", "--n_evaluation_episodes", help="number of evaluation episodes", default=25, type=int)
+    parser.add_argument("-f", "--file", help="checkpoint to load", required=True, type=str)
+    parser.add_argument("-n", "--n_evaluation_episodes", help="number of evaluation episodes", default=10, type=int)
 
     # TODO
     # parser.add_argument("-e", "--evaluation_env_config", help="evaluation config id (eg 0 for Test_0)", default=0, type=int)

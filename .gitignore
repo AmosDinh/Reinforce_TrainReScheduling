@@ -7,3 +7,5 @@ amos/flatland-master/*
 **/runs/*
 !**/runs/.gitkeep
 !**/wandb/.gitkeep
+amos/demo_rl_agent/utils/__pycache__/*
+/reinforcement_learning/submissions
