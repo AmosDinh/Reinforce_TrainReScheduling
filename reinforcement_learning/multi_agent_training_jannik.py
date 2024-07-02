@@ -42,7 +42,7 @@ try:
         mode="online",  # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
         sync_tensorboard=True,
         # name=runname,
-        project="Reinforce_TrainRescheduling",
+        project="Jannik",
     )
 
 except ImportError:
@@ -396,38 +396,20 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
                 eval_env, policy, train_params, obs_params
             )
 
-            writer.add_scalar("evaluation/scores_min", np.min(scores), episode_idx)
-            writer.add_scalar("evaluation/scores_max", np.max(scores), episode_idx)
-            writer.add_scalar("evaluation/scores_mean", np.mean(scores), episode_idx)
-            writer.add_scalar("evaluation/scores_std", np.std(scores), episode_idx)
-            writer.add_histogram("evaluation/scores", np.array(scores), episode_idx)
-            writer.add_scalar(
-                "evaluation/completions_min", np.min(completions), episode_idx
-            )
-            writer.add_scalar(
-                "evaluation/completions_max", np.max(completions), episode_idx
-            )
-            writer.add_scalar(
-                "evaluation/completions_mean", np.mean(completions), episode_idx
-            )
-            writer.add_scalar(
-                "evaluation/completions_std", np.std(completions), episode_idx
-            )
-            writer.add_histogram(
-                "evaluation/completions", np.array(completions), episode_idx
-            )
-            writer.add_scalar(
-                "evaluation/nb_steps_min", np.min(nb_steps_eval), episode_idx
-            )
-            writer.add_scalar(
-                "evaluation/nb_steps_max", np.max(nb_steps_eval), episode_idx
-            )
-            writer.add_scalar(
-                "evaluation/nb_steps_mean", np.mean(nb_steps_eval), episode_idx
-            )
-            writer.add_scalar(
-                "evaluation/nb_steps_std", np.std(nb_steps_eval), episode_idx
-            )
+            wandb.log({"evaluation/scores_min": np.min(scores)}, step=episode_idx)
+            wandb.log({"evaluation/scores_max": np.max(scores)}, step=episode_idx)
+            wandb.log({"evaluation/scores_mean": np.mean(scores)}, step=episode_idx)
+            wandb.log({"evaluation/scores_std": np.std(scores)}, step=episode_idx)
+            wandb.log({"evaluation/scores": np.array(scores)}, step=episode_idx, commit=False)
+            wandb.log({"evaluation/completions_min": np.min(completions)}, step=episode_idx)
+            wandb.log({"evaluation/completions_max": np.max(completions)}, step=episode_idx)
+            wandb.log({"evaluation/completions_mean": np.mean(completions)}, step=episode_idx)
+            wandb.log({"evaluation/completions_std": np.std(completions)}, step=episode_idx)
+            wandb.log({"evaluation/completions": np.array(completions)}, step=episode_idx, commit=False)
+            wandb.log({"evaluation/nb_steps_min": np.min(nb_steps_eval)}, step=episode_idx)
+            wandb.log({"evaluation/nb_steps_max": np.max(nb_steps_eval)}, step=episode_idx)
+            wandb.log({"evaluation/nb_steps_mean": np.mean(nb_steps_eval)}, step=episode_idx)
+            wandb.log({"evaluation/nb_steps_std": np.std(nb_steps_eval)}, step=episode_idx)
             writer.add_histogram(
                 "evaluation/nb_steps", np.array(nb_steps_eval), episode_idx
             )
