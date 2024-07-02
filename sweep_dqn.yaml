@@ -1,6 +1,7 @@
 # This sweep file can be used to run hyper-parameter search using Weight & Biases tools
 # See: https://docs.wandb.com/sweeps
-program: reinforcement_learning/multi_agent_training_jannik.py
+program: reinforcement_learning/multi_agent_training_dqn.py
+name: dqn
 method: bayes
 metric:
     name: evaluation/smoothed_score

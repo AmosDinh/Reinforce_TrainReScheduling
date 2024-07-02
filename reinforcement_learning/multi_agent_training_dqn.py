@@ -42,7 +42,7 @@ try:
         mode="online",  # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
         sync_tensorboard=True,
         # name=runname,
-        project="Jannik",
+        project="Reinforce_TrainReScheduling-reinforcement_learning",
     )
 
 except ImportError:
@@ -396,22 +396,51 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
                 eval_env, policy, train_params, obs_params
             )
 
-            wandb.log({"evaluation/scores_min": np.min(scores)}, step=episode_idx)
-            wandb.log({"evaluation/scores_max": np.max(scores)}, step=episode_idx)
-            wandb.log({"evaluation/scores_mean": np.mean(scores)}, step=episode_idx)
-            wandb.log({"evaluation/scores_std": np.std(scores)}, step=episode_idx)
-            wandb.log({"evaluation/scores": np.array(scores)}, step=episode_idx, commit=False)
-            wandb.log({"evaluation/completions_min": np.min(completions)}, step=episode_idx)
-            wandb.log({"evaluation/completions_max": np.max(completions)}, step=episode_idx)
-            wandb.log({"evaluation/completions_mean": np.mean(completions)}, step=episode_idx)
-            wandb.log({"evaluation/completions_std": np.std(completions)}, step=episode_idx)
-            wandb.log({"evaluation/completions": np.array(completions)}, step=episode_idx, commit=False)
-            wandb.log({"evaluation/nb_steps_min": np.min(nb_steps_eval)}, step=episode_idx)
-            wandb.log({"evaluation/nb_steps_max": np.max(nb_steps_eval)}, step=episode_idx)
-            wandb.log({"evaluation/nb_steps_mean": np.mean(nb_steps_eval)}, step=episode_idx)
-            wandb.log({"evaluation/nb_steps_std": np.std(nb_steps_eval)}, step=episode_idx)
-            writer.add_histogram(
-                "evaluation/nb_steps", np.array(nb_steps_eval), episode_idx
+            wandb.log({"evaluation/scores_min": np.min(scores), "step": episode_idx})
+            wandb.log({"evaluation/scores_max": np.max(scores), "step": episode_idx})
+            wandb.log({"evaluation/scores_mean": np.mean(scores), "step": episode_idx})
+            wandb.log({"evaluation/scores_std": np.std(scores), "step": episode_idx})
+            wandb.log({"evaluation/scores": np.array(scores), "step": episode_idx})
+            wandb.log(
+                {"evaluation/completions_min": np.min(completions), "step": episode_idx}
+            )
+            wandb.log(
+                {"evaluation/completions_max": np.max(completions), "step": episode_idx}
+            )
+            wandb.log(
+                {
+                    "evaluation/completions_mean": np.mean(completions),
+                    "step": episode_idx,
+                }
+            )
+            wandb.log(
+                {"evaluation/completions_std": np.std(completions), "step": episode_idx}
+            )
+            wandb.log(
+                {"evaluation/completions": np.array(completions), "step": episode_idx}
+            )
+            wandb.log(
+                {"evaluation/nb_steps_min": np.min(nb_steps_eval), "step": episode_idx}
+            )
+            wandb.log(
+                {"evaluation/nb_steps_max": np.max(nb_steps_eval), "step": episode_idx}
+            )
+            wandb.log(
+                {
+                    "evaluation/nb_steps_mean": np.mean(nb_steps_eval),
+                    "step": episode_idx,
+                }
+            )
+            wandb.log(
+                {"evaluation/nb_steps_std": np.std(nb_steps_eval), "step": episode_idx}
+            )
+            wandb.log(
+                {
+                    "evaluation/nb_steps": wandb.Histogram(
+                        np_histogram=np.histogram(np.array(nb_steps_eval))
+                    ),
+                    "episode": episode_idx,
+                }
             )
 
             smoothing = 0.9
@@ -422,49 +451,73 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
             smoothed_eval_completion = smoothed_eval_completion * smoothing + np.mean(
                 completions
             ) * (1.0 - smoothing)
-            writer.add_scalar(
-                "evaluation/smoothed_score", smoothed_eval_normalized_score, episode_idx
+            wandb.log(
+                {
+                    "evaluation/smoothed_score": smoothed_eval_normalized_score,
+                    "step": episode_idx,
+                }
             )
-            writer.add_scalar(
-                "evaluation/smoothed_completion", smoothed_eval_completion, episode_idx
+            wandb.log(
+                {
+                    "evaluation/smoothed_completion": smoothed_eval_completion,
+                    "step": episode_idx,
+                }
             )
 
         # Save logs to tensorboard
-        writer.add_scalar("training/score", normalized_score, episode_idx)
-        writer.add_scalar(
-            "training/smoothed_score", smoothed_normalized_score, episode_idx
+        wandb.log({"training/score": normalized_score, "step": episode_idx})
+        wandb.log(
+            {"training/smoothed_score": smoothed_normalized_score, "step": episode_idx}
         )
-        writer.add_scalar("training/completion", np.mean(completion), episode_idx)
-        writer.add_scalar(
-            "training/smoothed_completion", np.mean(smoothed_completion), episode_idx
+        wandb.log({"training/completion": np.mean(completion), "step": episode_idx})
+        wandb.log(
+            {
+                "training/smoothed_completion": np.mean(smoothed_completion),
+                "step": episode_idx,
+            }
         )
-        writer.add_scalar("training/nb_steps", nb_steps, episode_idx)
-        writer.add_histogram(
-            "actions/distribution", np.array(actions_taken), episode_idx
+        wandb.log({"training/nb_steps": nb_steps, "step": episode_idx})
+        wandb.log(
+            {"actions/distribution": np.array(actions_taken), "step": episode_idx}
         )
-        writer.add_scalar(
-            "actions/nothing", action_probs[RailEnvActions.DO_NOTHING], episode_idx
+        wandb.log(
+            {
+                "actions/nothing": action_probs[RailEnvActions.DO_NOTHING],
+                "step": episode_idx,
+            }
         )
-        writer.add_scalar(
-            "actions/left", action_probs[RailEnvActions.MOVE_LEFT], episode_idx
+        wandb.log(
+            {
+                "actions/left": action_probs[RailEnvActions.MOVE_LEFT],
+                "step": episode_idx,
+            }
         )
-        writer.add_scalar(
-            "actions/forward", action_probs[RailEnvActions.MOVE_FORWARD], episode_idx
+        wandb.log(
+            {
+                "actions/forward": action_probs[RailEnvActions.MOVE_FORWARD],
+                "step": episode_idx,
+            }
         )
-        writer.add_scalar(
-            "actions/right", action_probs[RailEnvActions.MOVE_RIGHT], episode_idx
+        wandb.log(
+            {
+                "actions/right": action_probs[RailEnvActions.MOVE_RIGHT],
+                "step": episode_idx,
+            }
         )
-        writer.add_scalar(
-            "actions/stop", action_probs[RailEnvActions.STOP_MOVING], episode_idx
+        wandb.log(
+            {
+                "actions/stop": action_probs[RailEnvActions.STOP_MOVING],
+                "step": episode_idx,
+            }
         )
-        writer.add_scalar("training/epsilon", eps_start, episode_idx)
-        writer.add_scalar("training/buffer_size", len(policy.memory), episode_idx)
-        writer.add_scalar("training/loss", policy.loss, episode_idx)
-        writer.add_scalar("timer/reset", reset_timer.get(), episode_idx)
-        writer.add_scalar("timer/step", step_timer.get(), episode_idx)
-        writer.add_scalar("timer/learn", learn_timer.get(), episode_idx)
-        writer.add_scalar("timer/preproc", preproc_timer.get(), episode_idx)
-        writer.add_scalar("timer/total", training_timer.get_current(), episode_idx)
+        wandb.log({"training/epsilon": eps_start, "step": episode_idx})
+        wandb.log({"training/buffer_size": len(policy.memory), "step": episode_idx})
+        wandb.log({"training/loss": policy.loss, "step": episode_idx})
+        wandb.log({"timer/reset": reset_timer.get(), "step": episode_idx})
+        wandb.log({"timer/step": step_timer.get(), "step": episode_idx})
+        wandb.log({"timer/learn": learn_timer.get(), "step": episode_idx})
+        wandb.log({"timer/preproc": preproc_timer.get(), "step": episode_idx})
+        wandb.log({"timer/total": training_timer.get_current(), "step": episode_idx})
 
 
 def format_action_prob(action_probs):
