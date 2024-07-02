@@ -39,7 +39,7 @@ try:
         mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
         sync_tensorboard=True, 
         # name=runname, 
-        project='Reinforce_TrainRescheduling')
+        project='Reinforce_TrainReScheduling-reinforcement_learning')
     
 except ImportError:
     print("Install wandb to log to Weights & Biases")

@@ -38,7 +38,7 @@ try:
         mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
         sync_tensorboard=True, 
         # name=runname, 
-        project='Reinforce_TrainRescheduling')
+        project='Reinforce_TrainReScheduling-reinforcement_learning')
     
 except ImportError:
     print("Install wandb to log to Weights & Biases")
@@ -531,3 +531,5 @@ if __name__ == "__main__":
     os.environ["OMP_NUM_THREADS"] = str(1)
     evaluate_agents(file=args.file, n_evaluation_episodes=args.n_evaluation_episodes, use_gpu=args.use_gpu, render=args.render,
                     allow_skipping=args.allow_skipping, allow_caching=args.allow_caching, renderspeed=args.renderspeed)
+    
+    # python reinforcement_learning/evaluate_agent.py -f="checkpoints/240628093349-1900.pth" --render --allow_skipping --allow_caching
