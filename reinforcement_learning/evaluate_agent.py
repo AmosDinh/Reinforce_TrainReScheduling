@@ -508,11 +508,11 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
                 np.sum(times) + np.sum(step_times)
             ))
 
-            writer.add_scalar(f"evaluation/number_steps", np.mean(nb_steps)  ,i)
-            writer.add_scalar(f"evaluation/perc_done", np.mean(completions) * 100.0 ,i)
-            writer.add_scalar(f"evaluation/score", np.mean(scores) ,i)
-            writer.add_scalar(f"evaluation/duration", np.mean(times) ,i)
-
+            wandb.log({"evaluation/number_steps": np.mean(nb_steps), "step": i})
+            wandb.log({"evaluation/perc_done": np.mean(completions) * 100.0, "step": i})
+            wandb.log({"evaluation/score": np.mean(scores), "step": i})
+            wandb.log({"evaluation/duration": np.mean(times), "step": i})
+            
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-f", "--file", help="checkpoint to load", required=True, type=str)
