@@ -25,13 +25,32 @@ from utils.deadlock_check import check_if_all_blocked
 from utils.timer import Timer
 from utils.observation_utils import normalize_observation
 from reinforcement_learning.dddqn_policy import DDDQNPolicy
+from torch.utils.tensorboard import SummaryWriter
 
+try:
+    import wandb
+
+    # runname = 'flatland-rl_run123' # specify your run name
+    # if not runname or runname == 'flatland-rl_run123':
+    #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
+    
+    wandb.init(
+        mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
+        sync_tensorboard=True, 
+        # name=runname, 
+        project='Reinforce_TrainRescheduling')
+    
+except ImportError:
+    print("Install wandb to log to Weights & Biases")
+writer = SummaryWriter()
 
 def eval_policy(env_params, checkpoint, n_eval_episodes, max_steps, action_size, state_size, seed, render, allow_skipping, allow_caching, renderspeed):
     # Evaluation is faster on CPU (except if you use a really huge policy)
     parameters = {
         'use_gpu': False
     }
+
+    
 
     policy = DDDQNPolicy(state_size, action_size, Namespace(**parameters), evaluation_mode=True)
     policy.qnetwork_local = torch.load(checkpoint)
@@ -454,11 +473,11 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
 
             results = []
             if render:
-                results.append(eval_policy(params, file, eval_per_thread, max_steps, action_size, state_size, 0, render, allow_skipping, allow_caching))
+                results.append(eval_policy(params, file, eval_per_thread, max_steps, action_size, state_size, 0, render, allow_skipping, allow_caching, renderspeed))
             else:
                 with Pool() as p:
                     results = p.starmap(eval_policy,
-                                        [(params, file, 1, max_steps, action_size, state_size, seed * nb_threads, render, allow_skipping, allow_caching)
+                                        [(params, file, 1, max_steps, action_size, state_size, seed * nb_threads, render, allow_skipping, allow_caching, renderspeed)
                                         for seed in range(total_nb_eval)])
 
             scores = []
@@ -489,6 +508,10 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
                 np.sum(times) + np.sum(step_times)
             ))
 
+            writer.add_scalar(f"evaluation/number_steps", np.mean(nb_steps)  ,i)
+            writer.add_scalar(f"evaluation/perc_done", np.mean(completions) * 100.0 ,i)
+            writer.add_scalar(f"evaluation/score", np.mean(scores) ,i)
+            writer.add_scalar(f"evaluation/duration", np.mean(times) ,i)
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -499,7 +522,7 @@ if __name__ == "__main__":
     # parser.add_argument("-e", "--evaluation_env_config", help="evaluation config id (eg 0 for Test_0)", default=0, type=int)
 
     parser.add_argument("--use_gpu", dest="use_gpu", help="use GPU if available", action='store_true', default=True)
-    parser.add_argument("--render", help="render a single episode", action='store_true', default=True)
+    parser.add_argument("--render", help="render a single episode", action='store_true', default=False)
     parser.add_argument("--allow_skipping", help="skips to the end of the episode if all agents are deadlocked", action='store_true', default=True)
     parser.add_argument("--allow_caching", help="caches the last observation-action pair", action='store_true', default=True)
     parser.add_argument("--renderspeed", help="render speed for visualization in milliseconds", default=0, type=int) # erlaubt es langsamer zu rendern
