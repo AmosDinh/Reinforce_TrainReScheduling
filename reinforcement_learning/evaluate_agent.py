@@ -473,11 +473,11 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
 
             results = []
             if render:
-                results.append(eval_policy(params, file, eval_per_thread, max_steps, action_size, state_size, 0, render, allow_skipping, allow_caching))
+                results.append(eval_policy(params, file, eval_per_thread, max_steps, action_size, state_size, 0, render, allow_skipping, allow_caching, renderspeed))
             else:
                 with Pool() as p:
                     results = p.starmap(eval_policy,
-                                        [(params, file, 1, max_steps, action_size, state_size, seed * nb_threads, render, allow_skipping, allow_caching)
+                                        [(params, file, 1, max_steps, action_size, state_size, seed * nb_threads, render, allow_skipping, allow_caching, renderspeed)
                                         for seed in range(total_nb_eval)])
 
             scores = []
@@ -522,7 +522,7 @@ if __name__ == "__main__":
     # parser.add_argument("-e", "--evaluation_env_config", help="evaluation config id (eg 0 for Test_0)", default=0, type=int)
 
     parser.add_argument("--use_gpu", dest="use_gpu", help="use GPU if available", action='store_true', default=True)
-    parser.add_argument("--render", help="render a single episode", action='store_true', default=True)
+    parser.add_argument("--render", help="render a single episode", action='store_true', default=False)
     parser.add_argument("--allow_skipping", help="skips to the end of the episode if all agents are deadlocked", action='store_true', default=True)
     parser.add_argument("--allow_caching", help="caches the last observation-action pair", action='store_true', default=True)
     parser.add_argument("--renderspeed", help="render speed for visualization in milliseconds", default=0, type=int) # erlaubt es langsamer zu rendern
