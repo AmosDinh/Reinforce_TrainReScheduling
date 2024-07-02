@@ -1,8 +1,9 @@
 amos/flatland-master/*
 **/wandb/*
-**/checkpoints/*
+**/checkpoints/*.pth
 *.DS_Store
 **/__pycache__/*
 **/*.pyc
 **/runs/*
- amos/demo_rl_agent/utils/__pycache__/*
+!**/runs/.gitkeep
+!**/wandb/.gitkeep
