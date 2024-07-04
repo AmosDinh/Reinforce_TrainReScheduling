@@ -27,6 +27,9 @@ class DeepPolicy(Policy):
         self.dueling_dqn = False
         self.double_dqn = False
         self.dqn = False
+        self.sarsa = False
+        self.expected_sarsa = False
+        self.expected_sarsa_temperature = 1.0
 
         self.hidsize = 1
 
@@ -56,10 +59,10 @@ class DeepPolicy(Policy):
         # Q-Network
         if self.dueling_dqn or self.double_dueling_dqn:
             Network_Type = DuelingQNetwork
-        elif self.dqn or self.double_dqn:
+        elif self.dqn or self.double_dqn or self.sarsa or self.expected_sarsa:
             Network_Type = QNetwork
         else:
-            raise ValueError("Exactly one of double_dueling_dqn, dueling_dqn, double_dqn, dqn must be True")
+            raise ValueError("One of double_dueling_dqn, dueling_dqn, double_dqn, dqn, sarsa must be True")
         
         self.qnetwork_local = Network_Type(self.state_size, self.action_size, hidsize1=self.hidsize, hidsize2=self.hidsize).to(self.device)
 
@@ -84,11 +87,11 @@ class DeepPolicy(Policy):
         else:
             return random.choice(np.arange(self.action_size))
 
-    def step(self, state, action, reward, next_state, done):
+    def step(self, state, action, reward, next_state, next_action, done):
         assert not self.evaluation_mode, "Policy has been initialized for evaluation only."
 
         # Save experience in replay memory
-        self.memory.add(state, action, reward, next_state, done)
+        self.memory.add(state, action, reward, next_state, next_action, done)
 
         # Learn every UPDATE_EVERY time steps.
         self.t_step = (self.t_step + 1) % self.update_every
@@ -99,34 +102,51 @@ class DeepPolicy(Policy):
 
     def _learn(self):
         experiences = self.memory.sample()
-        states, actions, rewards, next_states, dones = experiences
+
+        # S_t, A_t, R_t1, S_t1, done
+        S_t, A_t, R_t1, S_t1, A_t1, dones = experiences
         
         # Get expected Q values from local model
         # Q network gives back (batch_size, action_size) tensor
         # We get the Q values for the actions taken
-        q_expected = self.qnetwork_local(states).gather(1, actions)
+        q_expected = self.qnetwork_local(S_t).gather(1, A_t)
 
-        assert sum([self.double_dueling_dqn, self.dueling_dqn, self.double_dqn, self.dqn]) == 1, "Exactly one of double_dueling_dqn, dqn, must be True"
+        assert sum([self.double_dueling_dqn, self.dueling_dqn, self.double_dqn, self.dqn, self.sarsa, self.expected_sarsa]) == 1, "Exactly one of double_dueling_dqn, dqn, must be True"
         if self.double_dueling_dqn or self.double_dqn:
             # off-policy
             # Double DQN
             # Loss = E[(r + γ * Q_target(s', argmax_{a'}(Q_local(s',a')) - Q_local(s, a))**2]
             # 1. Get the best action for the next state from the local model
             # 2. Get the Q values for the best action (selected by local model) of the target model
-            q_best_action = self.qnetwork_local(next_states).max(1)[1]
-            q_targets_next = self.qnetwork_target(next_states).gather(1, q_best_action.unsqueeze(-1))
+            q_best_action = self.qnetwork_local(S_t1).max(1)[1]
+            q_targets_next = self.qnetwork_target(S_t1).gather(1, q_best_action.unsqueeze(-1))
         elif self.dueling_dqn or self.dqn:
             # off-policy
             # DQN
             # Get the Q value for the best action from the target model
-            q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(-1)
-        # elif self.sarsa:
-        #     # on policy
-        #     # AMOS SARSA  # have to add next action for sarsa, use different 
+            q_targets_next = self.qnetwork_target(S_t1).detach().max(1)[0].unsqueeze(-1)
+        elif self.sarsa:
+            # on policy
+            # SARSA
+            q_targets_next = self.qnetwork_local(S_t1).gather(1, A_t1)
+        
+        elif self.expected_sarsa:
+            # off policy
+            # Expected SARSA
+            # we decide to use π(a) = exp(Q(s,a)/T) / Σ_a'(exp(Q(s,a')/T))
+            # as update policy (could use e greedy as well) and stay with e-greedy for the decision policy
+            with torch.no_grad():
+                self.qnetwork_local.eval()
+                numerator = torch.exp(self.qnetwork_local(S_t1) / self.expected_sarsa_temperature)
+                denominator = torch.sum(numerator, dim=1).unsqueeze(1)**-1  
+                pi_a = numerator * denominator
+                self.qnetwork_local.train()
+
+            q_targets_next = torch.sum(torch.multiply(pi_a, self.qnetwork_local(S_t1))).unsqueeze(-1)
 
         # Compute Q targets for current states
         # Only update if not done
-        q_targets = rewards + (self.gamma * q_targets_next * (1 - dones))
+        q_targets = R_t1 + (self.gamma * q_targets_next * (1 - dones))
 
         # Compute loss
         # Learn bellmans equation with mse: Q(s,a) = r + γ * max_{a'}(Q(s', a')) -> minimize Q(s,a) - (r + γ * max_{a'}(Q(s', a'))) 
@@ -193,4 +213,17 @@ class DoubleDuelingDQN(DeepPolicy):
     def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
         super().__init__(state_size, action_size, parameters, evaluation_mode)
         self.double_dueling_dqn = True
+        self._initialize()
+
+class SARSA(DeepPolicy):
+    def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
+        super().__init__(state_size, action_size, parameters, evaluation_mode)
+        self.sarsa = True
+        self._initialize()
+
+class ExpectedSARSA(DeepPolicy):
+    def __init__(self, state_size, action_size, parameters, evaluation_mode=False, expected_sarsa_temperature=1.0):
+        super().__init__(state_size, action_size, parameters, evaluation_mode)
+        self.expected_sarsa_temperature = expected_sarsa_temperature
+        self.expected_sarsa = True
         self._initialize()

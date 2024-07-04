@@ -10,7 +10,7 @@ from collections.abc import Iterable
 import os
 import pickle
 
-Experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
+Experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "next_action", "done"])
 
 
 class ReplayBuffer:
@@ -30,9 +30,9 @@ class ReplayBuffer:
         self.batch_size = batch_size
         self.device = device
 
-    def add(self, state, action, reward, next_state, done):
+    def add(self, state, action, reward, next_state, next_action, done):
         """Add a new experience to memory."""
-        e = Experience(np.expand_dims(state, 0), action, reward, np.expand_dims(next_state, 0), done)
+        e = Experience(np.expand_dims(state, 0), action, reward, np.expand_dims(next_state, 0), next_action, done)
         self.memory.append(e)
 
     def sample(self):
@@ -45,12 +45,14 @@ class ReplayBuffer:
             .long().to(self.device)
         rewards = torch.from_numpy(self.__v_stack_impr([e.reward for e in experiences if e is not None])) \
             .float().to(self.device)
-        next_states = torch.from_numpy(self.__v_stack_impr([e.next_state for e in experiences if e is not None])) \
-            .float().to(self.device)
+        next_states = torch.from_numpy(self.__v_stack_impr([e.next_state for e in experiences if e is not None])).float().to(self.device)\
+        
+        next_action = torch.from_numpy(self.__v_stack_impr([e.next_action for e in experiences if e is not None])) \
+            .long().to(self.device)
         dones = torch.from_numpy(self.__v_stack_impr([e.done for e in experiences if e is not None]).astype(np.uint8)) \
             .float().to(self.device)
 
-        return states, actions, rewards, next_states, dones
+        return states, actions, rewards, next_states, next_action, dones
 
     def __len__(self):
         """Return the current size of internal memory."""

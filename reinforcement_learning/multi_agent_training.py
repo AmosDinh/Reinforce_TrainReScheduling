@@ -26,7 +26,7 @@ sys.path.append(str(base_dir))
 
 from utils.timer import Timer
 from utils.observation_utils import normalize_observation
-from reinforcement_learning.deep_policy import DQN, DoubleDQN, DuelingDQN, DoubleDuelingDQN
+from reinforcement_learning.deep_policy import DQN, DoubleDQN, DuelingDQN, DoubleDuelingDQN, SARSA, ExpectedSARSA
 
 try:
     import wandb
@@ -153,6 +153,11 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         policy = DuelingDQN(state_size, action_size, train_params)
     elif training_params.policy == 'double_dueling_dqn':
         policy = DoubleDuelingDQN(state_size, action_size, train_params)
+    elif training_params.policy == 'sarsa':
+        policy = SARSA(state_size, action_size, train_params)
+    elif training_params.policy == 'expected_sarsa':
+        policy = ExpectedSARSA(state_size, action_size, train_params, evaluation_mode=False, expected_sarsa_temperature=train_params.expected_sarsa_temperature)
+
   
     
 
@@ -266,7 +271,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
                 if update_values[agent] or done['__all__']:
                     # Only learn from timesteps where somethings happened
                     learn_timer.start()
-                    policy.step(agent_prev_obs[agent], agent_prev_action[agent], all_rewards[agent], agent_obs[agent], done[agent])
+                    policy.step(agent_prev_obs[agent], agent_prev_action[agent], all_rewards[agent], agent_obs[agent], action_dict[agent],  done[agent])
                     learn_timer.end()
 
                     agent_prev_obs[agent] = agent_obs[agent].copy()
@@ -489,7 +494,8 @@ if __name__ == "__main__":
     parser.add_argument("--use_gpu", help="use GPU if available", default=False, type=bool)
     parser.add_argument("--num_threads", help="number of threads PyTorch can use", default=1, type=int)
     parser.add_argument("--render", help="render 1 episode in 100", default=False, type=bool)
-    parser.add_argument('--policy', help='Policy to use: options: dqn, double_dqn, dueling_dqn, double_dueling_dqn', type=str)
+    parser.add_argument('--policy', help='Policy to use: options: dqn, double_dqn, dueling_dqn, double_dueling_dqn, sarsa, expected_sarsa', type=str)
+    parser.add_argument("--expected_sarsa_temperature", help="temperature for learning Q value", default=1.0, type=float)
     training_params = parser.parse_args()
 
     env_params = [
@@ -558,6 +564,6 @@ if __name__ == "__main__":
     os.environ["OMP_NUM_THREADS"] = str(training_params.num_threads)
     
 
-    training_params.policy = 'dqn'
+    training_params.policy = 'expected_sarsa'
     print('\n🚂 Training policy: {}'.format(training_params.policy))
     train_agent(training_params, Namespace(**training_env_params), Namespace(**evaluation_env_params), Namespace(**obs_params))
