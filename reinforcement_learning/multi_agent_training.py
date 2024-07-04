@@ -145,13 +145,13 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
     smoothed_eval_completion = 0.0
 
     # Double Dueling DQN policy
-    if training_params.policy is 'dqn':
+    if training_params.policy == 'dqn':
         policy = DQN(state_size, action_size, train_params)
-    elif training_params.policy is 'double_dqn':
+    elif training_params.policy == 'double_dqn':
         policy = DoubleDQN(state_size, action_size, train_params)
-    elif training_params.policy is 'dueling_dqn':
+    elif training_params.policy == 'dueling_dqn':
         policy = DuelingDQN(state_size, action_size, train_params)
-    elif training_params.policy is 'double_dueling_dqn':
+    elif training_params.policy == 'double_dueling_dqn':
         policy = DoubleDuelingDQN(state_size, action_size, train_params)
   
     
@@ -316,10 +316,10 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
         # Print logs
         if episode_idx % checkpoint_interval == 0:
-            torch.save(policy.qnetwork_local, './checkpoints/dddqn_policy' + training_id + '-' + str(episode_idx) + '.pth')
+            torch.save(policy.qnetwork_local, f'./checkpoints/{train_params.policy}' + training_id + '-' + str(episode_idx) + '.pth')
 
             if save_replay_buffer:
-                policy.save_replay_buffer('./replay_buffers/dddqn_policy' + training_id + '-' + str(episode_idx) + '.pkl')
+                policy.save_replay_buffer(f'./replay_buffers/{train_params.policy}' + training_id + '-' + str(episode_idx) + '.pkl')
 
             if train_params.render:
                 env_renderer.close_window()
