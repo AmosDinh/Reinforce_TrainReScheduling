@@ -18,3 +18,11 @@ Für einen run kann der Run-Name angepasst werden in multi_agent_training.py: <b
 
 <br>
 Link: [https://wandb.ai/Reinforce_Team/Reinforce_TrainRescheduling](https://wandb.ai/Reinforce_Team/Reinforce_TrainRescheduling)
+
+
+# Agents:
+In folder `reinforcement_learning:`
+1. Double Dueling DQN `dddqn_policy.py`
+2. Dueling DQN `dddqn_policy.py`
+3. DQN in `dqn_policy.py`
+4. Double DQN in `dqn_policy.py`

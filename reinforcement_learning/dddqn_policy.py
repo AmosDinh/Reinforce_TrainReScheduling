@@ -3,7 +3,6 @@ import os
 import pickle
 import random
 from collections import namedtuple, deque
-from collections.abc import Iterable
 
 import numpy as np
 import torch
@@ -12,6 +11,8 @@ import torch.optim as optim
 
 from reinforcement_learning.model import DuelingQNetwork
 from reinforcement_learning.policy import Policy
+
+from reinforcement_learning.ReplayBuffer import ReplayBuffer
 
 
 class DDDQNPolicy(Policy):
@@ -22,7 +23,8 @@ class DDDQNPolicy(Policy):
 
         self.state_size = state_size
         self.action_size = action_size
-        self.double_dqn = True
+        self.double_dueling_dqn = True
+        self.dueling_dqn = False
         self.hidsize = 1
 
         if not evaluation_mode:
@@ -88,20 +90,35 @@ class DDDQNPolicy(Policy):
         states, actions, rewards, next_states, dones = experiences
         
         # Get expected Q values from local model
+        # Q network gives back (batch_size, action_size) tensor
+        # We get the Q values for the actions taken
         q_expected = self.qnetwork_local(states).gather(1, actions)
 
-        if self.double_dqn:
+        assert sum([self.double_dueling_dqn, self.dueling_dqn]) == 1, "Exactly one of double_dueling_dqn, dqn, must be True"
+        if self.double_dueling_dqn:
+            # off-policy
             # Double DQN
+            # Loss = E[(r + γ * Q_target(s', argmax_{a'}(Q_local(s',a')) - Q_local(s, a))**2]
+            # 1. Get the best action for the next state from the local model
+            # 2. Get the Q values for the best action (selected by local model) of the target model
             q_best_action = self.qnetwork_local(next_states).max(1)[1]
             q_targets_next = self.qnetwork_target(next_states).gather(1, q_best_action.unsqueeze(-1))
-        else:
+        elif self.dueling_dqn:
+            # off-policy
             # DQN
+            # Get the Q value for the best action from the target model
             q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(-1)
+        # elif self.sarsa:
+        #     # on policy
+        #     # AMOS SARSA  # have to add next action for sarsa, use different 
 
         # Compute Q targets for current states
+        # Only update if not done
         q_targets = rewards + (self.gamma * q_targets_next * (1 - dones))
 
         # Compute loss
+        # Learn bellmans equation with mse: Q(s,a) = r + γ * max_{a'}(Q(s', a')) -> minimize Q(s,a) - (r + γ * max_{a'}(Q(s', a'))) 
+        # This is equivalent to saying Q(s,a) = Q(s,a) + (⍺) (r + γ * max_{a'}(Q(s', a')) - Q(s,a))
         self.loss = F.mse_loss(q_expected, q_targets)
 
         # Minimize the loss
@@ -116,6 +133,7 @@ class DDDQNPolicy(Policy):
         # Soft update model parameters.
         # θ_target = τ*θ_local + (1 - τ)*θ_target
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
+            # interpolation, idk where it comes from
             target_param.data.copy_(tau * local_param.data + (1.0 - tau) * target_param.data)
 
     def save(self, filename):
@@ -142,53 +160,8 @@ class DDDQNPolicy(Policy):
         self._learn()
 
 
-Experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
-
-
-class ReplayBuffer:
-    """Fixed-size buffer to store experience tuples."""
-
-    def __init__(self, action_size, buffer_size, batch_size, device):
-        """Initialize a ReplayBuffer object.
-
-        Params
-        ======
-            action_size (int): dimension of each action
-            buffer_size (int): maximum size of buffer
-            batch_size (int): size of each training batch
-        """
-        self.action_size = action_size
-        self.memory = deque(maxlen=buffer_size)
-        self.batch_size = batch_size
-        self.device = device
-
-    def add(self, state, action, reward, next_state, done):
-        """Add a new experience to memory."""
-        e = Experience(np.expand_dims(state, 0), action, reward, np.expand_dims(next_state, 0), done)
-        self.memory.append(e)
-
-    def sample(self):
-        """Randomly sample a batch of experiences from memory."""
-        experiences = random.sample(self.memory, k=self.batch_size)
-
-        states = torch.from_numpy(self.__v_stack_impr([e.state for e in experiences if e is not None])) \
-            .float().to(self.device)
-        actions = torch.from_numpy(self.__v_stack_impr([e.action for e in experiences if e is not None])) \
-            .long().to(self.device)
-        rewards = torch.from_numpy(self.__v_stack_impr([e.reward for e in experiences if e is not None])) \
-            .float().to(self.device)
-        next_states = torch.from_numpy(self.__v_stack_impr([e.next_state for e in experiences if e is not None])) \
-            .float().to(self.device)
-        dones = torch.from_numpy(self.__v_stack_impr([e.done for e in experiences if e is not None]).astype(np.uint8)) \
-            .float().to(self.device)
-
-        return states, actions, rewards, next_states, dones
-
-    def __len__(self):
-        """Return the current size of internal memory."""
-        return len(self.memory)
-
-    def __v_stack_impr(self, states):
-        sub_dim = len(states[0][0]) if isinstance(states[0], Iterable) else 1
-        np_states = np.reshape(np.array(states), (len(states), sub_dim))
-        return np_states
+class DoubleDQN_policy(DDDQNPolicy):
+    def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
+        super().__init__(state_size, action_size, parameters, evaluation_mode)
+        self.dueling_dqn = True
+        self.double_dueling_dqn = False
