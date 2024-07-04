@@ -24,7 +24,7 @@ sys.path.append(str(base_dir))
 from utils.deadlock_check import check_if_all_blocked
 from utils.timer import Timer
 from utils.observation_utils import normalize_observation
-from reinforcement_learning.dddqn_policy import DDDQNPolicy
+from reinforcement_learning.deep_policy import DDDQNPolicy
 from torch.utils.tensorboard import SummaryWriter
 
 try:

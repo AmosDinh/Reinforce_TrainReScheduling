@@ -26,7 +26,7 @@ sys.path.append(str(base_dir))
 
 from utils.timer import Timer
 from utils.observation_utils import normalize_observation
-from reinforcement_learning.dddqn_policy import DDDQNPolicy
+from reinforcement_learning.deep_policy import DQN, DoubleDQN, DuelingDQN, DoubleDuelingDQN
 
 try:
     import wandb
@@ -145,7 +145,15 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
     smoothed_eval_completion = 0.0
 
     # Double Dueling DQN policy
-    policy = DDDQNPolicy(state_size, action_size, train_params)
+    if training_params.policy is 'dqn':
+        policy = DQN(state_size, action_size, train_params)
+    elif training_params.policy is 'double_dqn':
+        policy = DoubleDQN(state_size, action_size, train_params)
+    elif training_params.policy is 'dueling_dqn':
+        policy = DuelingDQN(state_size, action_size, train_params)
+    elif training_params.policy is 'double_dueling_dqn':
+        policy = DoubleDuelingDQN(state_size, action_size, train_params)
+  
     
 
 
@@ -481,6 +489,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_gpu", help="use GPU if available", default=False, type=bool)
     parser.add_argument("--num_threads", help="number of threads PyTorch can use", default=1, type=int)
     parser.add_argument("--render", help="render 1 episode in 100", default=False, type=bool)
+    parser.add_argument('--policy', help='Policy to use: options: dqn, double_dqn, dueling_dqn, double_dueling_dqn', type=str)
     training_params = parser.parse_args()
 
     env_params = [
@@ -547,4 +556,8 @@ if __name__ == "__main__":
     pprint(obs_params)
 
     os.environ["OMP_NUM_THREADS"] = str(training_params.num_threads)
+    
+
+    training_params.policy = 'dqn'
+    print('\n🚂 Training policy: {}'.format(training_params.policy))
     train_agent(training_params, Namespace(**training_env_params), Namespace(**evaluation_env_params), Namespace(**obs_params))

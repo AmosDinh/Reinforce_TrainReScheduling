@@ -9,22 +9,25 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from reinforcement_learning.model import DuelingQNetwork
+from reinforcement_learning.model import DuelingQNetwork, QNetwork
 from reinforcement_learning.policy import Policy
 
 from reinforcement_learning.ReplayBuffer import ReplayBuffer
 
 
-class DDDQNPolicy(Policy):
-    """Dueling Double DQN policy"""
+class DeepPolicy(Policy):
+    """Implements DQN, Double DQN, Dueling DQN, Double Dueling DQN"""
 
     def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
         self.evaluation_mode = evaluation_mode
 
         self.state_size = state_size
         self.action_size = action_size
-        self.double_dueling_dqn = True
+        self.double_dueling_dqn = False
         self.dueling_dqn = False
+        self.double_dqn = False
+        self.dqn = False
+
         self.hidsize = 1
 
         if not evaluation_mode:
@@ -36,7 +39,9 @@ class DDDQNPolicy(Policy):
             self.tau = parameters.tau
             self.gamma = parameters.gamma
             self.buffer_min_size = parameters.buffer_min_size
-
+    
+    def _initialize(self):
+        """Call after the policy type has been set in the child class"""
         # Device
         if torch.backends.mps.is_available() and False:
             self.device = torch.device("mps")
@@ -49,12 +54,19 @@ class DDDQNPolicy(Policy):
             print("🐌 Using CPU for PyTorch")
 
         # Q-Network
-        self.qnetwork_local = DuelingQNetwork(state_size, action_size, hidsize1=self.hidsize, hidsize2=self.hidsize).to(self.device)
+        if self.dueling_dqn or self.double_dueling_dqn:
+            Network_Type = DuelingQNetwork
+        elif self.dqn or self.double_dqn:
+            Network_Type = QNetwork
+        else:
+            raise ValueError("Exactly one of double_dueling_dqn, dueling_dqn, double_dqn, dqn must be True")
+        
+        self.qnetwork_local = Network_Type(self.state_size, self.action_size, hidsize1=self.hidsize, hidsize2=self.hidsize).to(self.device)
 
-        if not evaluation_mode:
+        if not self.evaluation_mode:
             self.qnetwork_target = copy.deepcopy(self.qnetwork_local)
             self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=self.learning_rate)
-            self.memory = ReplayBuffer(action_size, self.buffer_size, self.batch_size, self.device)
+            self.memory = ReplayBuffer(self.action_size, self.buffer_size, self.batch_size, self.device)
 
             self.t_step = 0
             self.loss = 0.0
@@ -94,8 +106,8 @@ class DDDQNPolicy(Policy):
         # We get the Q values for the actions taken
         q_expected = self.qnetwork_local(states).gather(1, actions)
 
-        assert sum([self.double_dueling_dqn, self.dueling_dqn]) == 1, "Exactly one of double_dueling_dqn, dqn, must be True"
-        if self.double_dueling_dqn:
+        assert sum([self.double_dueling_dqn, self.dueling_dqn, self.double_dqn, self.dqn]) == 1, "Exactly one of double_dueling_dqn, dqn, must be True"
+        if self.double_dueling_dqn or self.double_dqn:
             # off-policy
             # Double DQN
             # Loss = E[(r + γ * Q_target(s', argmax_{a'}(Q_local(s',a')) - Q_local(s, a))**2]
@@ -103,7 +115,7 @@ class DDDQNPolicy(Policy):
             # 2. Get the Q values for the best action (selected by local model) of the target model
             q_best_action = self.qnetwork_local(next_states).max(1)[1]
             q_targets_next = self.qnetwork_target(next_states).gather(1, q_best_action.unsqueeze(-1))
-        elif self.dueling_dqn:
+        elif self.dueling_dqn or self.dqn:
             # off-policy
             # DQN
             # Get the Q value for the best action from the target model
@@ -159,9 +171,26 @@ class DDDQNPolicy(Policy):
         self.act(np.array([[0] * self.state_size]))
         self._learn()
 
+class DQN(DeepPolicy):
+    def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
+        super().__init__(state_size, action_size, parameters, evaluation_mode)
+        self.dqn = True
+        self._initialize()
 
-class DoubleDQN_policy(DDDQNPolicy):
+class DoubleDQN(DeepPolicy):
+    def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
+        super().__init__(state_size, action_size, parameters, evaluation_mode)
+        self.double_dqn = True
+        self._initialize()
+
+class DuelingDQN(DeepPolicy):
     def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
         super().__init__(state_size, action_size, parameters, evaluation_mode)
         self.dueling_dqn = True
-        self.double_dueling_dqn = False
+        self._initialize()
+
+class DoubleDuelingDQN(DeepPolicy):
+    def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
+        super().__init__(state_size, action_size, parameters, evaluation_mode)
+        self.double_dueling_dqn = True
+        self._initialize()

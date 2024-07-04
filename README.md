@@ -21,8 +21,5 @@ Link: [https://wandb.ai/Reinforce_Team/Reinforce_TrainRescheduling](https://wand
 
 
 # Agents:
-In folder `reinforcement_learning:`
-1. Double Dueling DQN `dddqn_policy.py`
-2. Dueling DQN `dddqn_policy.py`
-3. DQN in `dqn_policy.py`
-4. Double DQN in `dqn_policy.py`
+In file `reinforcement_learning/deep_policy` there is the base class which  defines dqn, double_dqn, dueling_dqn and double_dueling_dqn
+
