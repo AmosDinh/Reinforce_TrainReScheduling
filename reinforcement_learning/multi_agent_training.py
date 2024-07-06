@@ -28,21 +28,7 @@ from utils.timer import Timer
 from utils.observation_utils import normalize_observation
 from reinforcement_learning.deep_policy import DQN, DoubleDQN, DuelingDQN, DoubleDuelingDQN, SARSA, ExpectedSARSA
 
-try:
-    import wandb
 
-    # runname = 'flatland-rl_run123' # specify your run name
-    # if not runname or runname == 'flatland-rl_run123':
-    #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
-    
-    wandb.init(
-        mode='disabled', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
-        sync_tensorboard=True, 
-        # name=runname, 
-        project='Reinforce_TrainReScheduling-reinforcement_learning')
-    
-except ImportError:
-    print("Install wandb to log to Weights & Biases")
 
 
 """
@@ -87,6 +73,23 @@ def create_rail_env(env_params, tree_observation):
 
 
 def train_agent(train_params, train_env_params, eval_env_params, obs_params):
+
+    try:
+        import wandb
+
+        # runname = 'flatland-rl_run123' # specify your run name
+        # if not runname or runname == 'flatland-rl_run123':
+        #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
+        
+        wandb.init(
+            mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
+            sync_tensorboard=True, 
+            name=f'{train_params.policy}_env_{train_params.training_env_config}', 
+            project='Reinforce_TrainReScheduling-reinforcement_learning')
+        
+    except ImportError:
+        print("Install wandb to log to Weights & Biases")
+
     # Environment parameters
     n_agents = train_env_params.n_agents
     x_dim = train_env_params.x_dim
@@ -498,16 +501,51 @@ if __name__ == "__main__":
     parser.add_argument("--expected_sarsa_temperature", help="temperature for learning Q value", default=1.0, type=float)
     training_params = parser.parse_args()
 
+    # env_params = [
+    #     {
+    #         # Test_0
+    #         "n_agents": 5,
+    #         "x_dim": 30,
+    #         "y_dim": 30,
+    #         "n_cities": 2,
+    #         "max_rails_between_cities": 2,
+    #         "max_rail_pairs_in_city": 1,
+    #         "malfunction_rate": 1 / 50,
+    #         "seed": 0
+    #     },
+    #     {
+    #         # Test_1
+    #         "n_agents": 10,
+    #         "x_dim": 30,
+    #         "y_dim": 30,
+    #         "n_cities": 2,
+    #         "max_rails_between_cities": 2,
+    #         "max_rail_pairs_in_city": 2,
+    #         "malfunction_rate": 1 / 100,
+    #         "seed": 0
+    #     },
+    #     {
+    #         # Test_2
+    #         "n_agents": 20,
+    #         "x_dim": 30,
+    #         "y_dim": 30,
+    #         "n_cities": 3,
+    #         "max_rails_between_cities": 2,
+    #         "max_rail_pairs_in_city": 2,
+    #         "malfunction_rate": 1 / 200,
+    #         "seed": 0
+    #     },
+    # ]
     env_params = [
         {
             # Test_0
-            "n_agents": 5,
+            "n_agents": 7,
             "x_dim": 30,
             "y_dim": 30,
             "n_cities": 2,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 1,
-            "malfunction_rate": 1 / 50,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 0,
             "seed": 0
         },
         {
@@ -527,6 +565,138 @@ if __name__ == "__main__":
             "x_dim": 30,
             "y_dim": 30,
             "n_cities": 3,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_3
+            "n_agents": 50,
+            "x_dim": 30,
+            "y_dim": 35,
+            "n_cities": 3,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 400,
+            "seed": 0
+        },
+        {
+            # Test_4
+            "n_agents": 80,
+            "x_dim": 35,
+            "y_dim": 30,
+            "n_cities": 5,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_5
+            "n_agents": 80,
+            "x_dim": 45,
+            "y_dim": 35,
+            "n_cities": 7,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_6
+            "n_agents": 80,
+            "x_dim": 40,
+            "y_dim": 60,
+            "n_cities": 9,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_7
+            "n_agents": 80,
+            "x_dim": 60,
+            "y_dim": 40,
+            "n_cities": 13,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_8
+            "n_agents": 80,
+            "x_dim": 60,
+            "y_dim": 60,
+            "n_cities": 17,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_9
+            "n_agents": 100,
+            "x_dim": 80,
+            "y_dim": 120,
+            "n_cities": 21,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_10
+            "n_agents": 100,
+            "x_dim": 100,
+            "y_dim": 80,
+            "n_cities": 25,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_11
+            "n_agents": 200,
+            "x_dim": 100,
+            "y_dim": 100,
+            "n_cities": 29,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_12
+            "n_agents": 200,
+            "x_dim": 150,
+            "y_dim": 150,
+            "n_cities": 33,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_13
+            "n_agents": 400,
+            "x_dim": 150,
+            "y_dim": 150,
+            "n_cities": 37,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 200,
+            "seed": 0
+        },
+        {
+            # Test_14
+            "n_agents": 425,
+            "x_dim": 158,
+            "y_dim": 158,
+            "n_cities": 41,
             "max_rails_between_cities": 2,
             "max_rail_pairs_in_city": 2,
             "malfunction_rate": 1 / 200,

@@ -9,3 +9,4 @@ amos/flatland-master/*
 !**/wandb/.gitkeep
 amos/demo_rl_agent/utils/__pycache__/*
 /reinforcement_learning/submissions
+*.vscode/
