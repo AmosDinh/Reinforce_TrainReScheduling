@@ -84,7 +84,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         wandb.init(
             mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
             sync_tensorboard=True, 
-            name=f'{train_params.policy}_env_{train_params.training_env_config}', 
+            name=f'{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}', 
             project='Reinforce_TrainReScheduling-reinforcement_learning')
         
     except ImportError:
@@ -498,6 +498,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_threads", help="number of threads PyTorch can use", default=1, type=int)
     parser.add_argument("--render", help="render 1 episode in 100", default=False, type=bool)
     parser.add_argument('--policy', help='Policy to use: options: dqn, double_dqn, dueling_dqn, double_dueling_dqn, sarsa, expected_sarsa', type=str)
+    parser.add_argument("--obstreedepth", help="depth of obs tree", default=2, type=int)
     parser.add_argument("--expected_sarsa_temperature", help="temperature for learning Q value", default=1.0, type=float)
     training_params = parser.parse_args()
 
@@ -705,9 +706,9 @@ if __name__ == "__main__":
     ]
 
     obs_params = {
-        "observation_tree_depth": 2,
-        "observation_radius": 10,
-        "observation_max_path_depth": 30
+        "observation_tree_depth": training_params.obstreedepth,  # default is 2
+        "observation_radius": 10,  # normalization constant for normalizing observations to make rf more stable across runs (not actually a radius)
+        "observation_max_path_depth": 30  # is used in the path predictor and ultimately to add info for agent a where b and c... will probably be, the predictor here only returns n locations of the predicted agent's b and c... position
     }
 
     def check_env_config(id):
@@ -734,6 +735,6 @@ if __name__ == "__main__":
     os.environ["OMP_NUM_THREADS"] = str(training_params.num_threads)
     
 
-    training_params.policy = 'expected_sarsa'
+    # training_params.policy = 'expected_sarsa'
     print('\n🚂 Training policy: {}'.format(training_params.policy))
     train_agent(training_params, Namespace(**training_env_params), Namespace(**evaluation_env_params), Namespace(**obs_params))
