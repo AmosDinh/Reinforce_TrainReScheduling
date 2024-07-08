@@ -287,8 +287,8 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 30,
             "n_cities": 2,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 0,
+            "max_rail_pairs_in_city": 4,
+            "malfunction_rate": 1 / 200,
             "seed": 0
         },
         {
@@ -298,8 +298,8 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 30,
             "n_cities": 2,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 100,
+            "max_rail_pairs_in_city": 4,
+            "malfunction_rate": 1 / 200,
             "seed": 0
         },
         {
@@ -309,7 +309,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 30,
             "n_cities": 3,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -320,8 +320,8 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 35,
             "n_cities": 3,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 400,
+            "max_rail_pairs_in_city": 4,
+            "malfunction_rate": 1 / 200,
             "seed": 0
         },
         {
@@ -331,7 +331,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 30,
             "n_cities": 5,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -342,7 +342,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 35,
             "n_cities": 7,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -353,7 +353,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 60,
             "n_cities": 9,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -364,7 +364,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 40,
             "n_cities": 13,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -375,7 +375,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 60,
             "n_cities": 17,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -386,7 +386,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 120,
             "n_cities": 21,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -397,7 +397,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 80,
             "n_cities": 25,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -408,7 +408,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 100,
             "n_cities": 29,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -419,7 +419,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 150,
             "n_cities": 33,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -430,7 +430,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 150,
             "n_cities": 37,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
@@ -441,7 +441,7 @@ def evaluate_agents(file, n_evaluation_episodes, use_gpu, render, allow_skipping
             "y_dim": 158,
             "n_cities": 41,
             "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
+            "max_rail_pairs_in_city": 4,
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
