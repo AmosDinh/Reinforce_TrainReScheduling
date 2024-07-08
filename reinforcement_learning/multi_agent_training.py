@@ -73,6 +73,7 @@ def create_rail_env(env_params, tree_observation):
 
 
 def train_agent(train_params, train_env_params, eval_env_params, obs_params):
+    name=f'sweep_n_step_sarsa_{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}_nstep_{train_params.n_step}_gamma_{train_params.gamma}'
 
     try:
         import wandb
@@ -80,11 +81,10 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         # runname = 'flatland-rl_run123' # specify your run name
         # if not runname or runname == 'flatland-rl_run123':
         #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
-        
         wandb.init(
             mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
             sync_tensorboard=True, 
-            name=f'{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}', 
+            name=name,
             project='Reinforce_TrainReScheduling-reinforcement_learning')
         
     except ImportError:
@@ -324,10 +324,10 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
         # Print logs
         if episode_idx % checkpoint_interval == 0:
-            torch.save(policy.qnetwork_local, f'./checkpoints/{train_params.policy}' + training_id + '-' + str(episode_idx) + '.pth')
+            torch.save(policy.qnetwork_local, f'./checkpoints/{name}' + training_id + '-' + str(episode_idx) + '.pth')
 
             if save_replay_buffer:
-                policy.save_replay_buffer(f'./replay_buffers/{train_params.policy}' + training_id + '-' + str(episode_idx) + '.pkl')
+                policy.save_replay_buffer(f'./replay_buffers/{name}' + training_id + '-' + str(episode_idx) + '.pkl')
 
             if train_params.render:
                 env_renderer.close_window()
@@ -500,6 +500,7 @@ if __name__ == "__main__":
     parser.add_argument('--policy', help='Policy to use: options: dqn, double_dqn, dueling_dqn, double_dueling_dqn, sarsa, expected_sarsa', type=str)
     parser.add_argument("--obstreedepth", help="depth of obs tree", default=2, type=int)
     parser.add_argument("--expected_sarsa_temperature", help="temperature for learning Q value", default=1.0, type=float)
+    parser.add_argument("--n_step", help="Number of reward steps to accumulate (e.g for n-step sarsa)", default=1, type=int)
     training_params = parser.parse_args()
 
     # env_params = [
@@ -735,6 +736,5 @@ if __name__ == "__main__":
     os.environ["OMP_NUM_THREADS"] = str(training_params.num_threads)
     
 
-    # training_params.policy = 'expected_sarsa'
     print('\n🚂 Training policy: {}'.format(training_params.policy))
     train_agent(training_params, Namespace(**training_env_params), Namespace(**evaluation_env_params), Namespace(**obs_params))

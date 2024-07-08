@@ -30,6 +30,7 @@ class DeepPolicy(Policy):
         self.sarsa = False
         self.expected_sarsa = False
         self.expected_sarsa_temperature = 1.0
+        self.n_step = 1
 
         self.hidsize = 1
 
@@ -97,11 +98,11 @@ class DeepPolicy(Policy):
         self.t_step = (self.t_step + 1) % self.update_every
         if self.t_step == 0:
             # If enough samples are available in memory, get random subset and learn
-            if len(self.memory) > self.buffer_min_size and len(self.memory) > self.batch_size:
+            if len(self.memory) > self.buffer_min_size and len(self.memory) > self.batch_size and len(self.memory) > self.n_step*(self.batch_size//10):
                 self._learn()
 
     def _learn(self):
-        experiences = self.memory.sample()
+        experiences = self.memory.sample(n=self.n_step, gamma=self.gamma)
 
         # S_t, A_t, R_t1, S_t1, done
         S_t, A_t, R_t1, S_t1, A_t1, dones = experiences
@@ -195,30 +196,40 @@ class DQN(DeepPolicy):
     def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
         super().__init__(state_size, action_size, parameters, evaluation_mode)
         self.dqn = True
+        self.n_step = parameters.n_step
+        self.gamma = parameters.gamma
         self._initialize()
 
 class DoubleDQN(DeepPolicy):
     def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
         super().__init__(state_size, action_size, parameters, evaluation_mode)
         self.double_dqn = True
+        self.n_step = parameters.n_step
+        self.gamma = parameters.gamma
         self._initialize()
 
 class DuelingDQN(DeepPolicy):
     def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
         super().__init__(state_size, action_size, parameters, evaluation_mode)
         self.dueling_dqn = True
+        self.n_step = parameters.n_step
+        self.gamma = parameters.gamma
         self._initialize()
 
 class DoubleDuelingDQN(DeepPolicy):
     def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
         super().__init__(state_size, action_size, parameters, evaluation_mode)
         self.double_dueling_dqn = True
+        self.n_step = parameters.n_step
+        self.gamma = parameters.gamma
         self._initialize()
 
 class SARSA(DeepPolicy):
     def __init__(self, state_size, action_size, parameters, evaluation_mode=False):
         super().__init__(state_size, action_size, parameters, evaluation_mode)
         self.sarsa = True
+        self.n_step = parameters.n_step
+        self.gamma = parameters.gamma
         self._initialize()
 
 class ExpectedSARSA(DeepPolicy):
@@ -226,4 +237,6 @@ class ExpectedSARSA(DeepPolicy):
         super().__init__(state_size, action_size, parameters, evaluation_mode)
         self.expected_sarsa_temperature = expected_sarsa_temperature
         self.expected_sarsa = True
+        self.n_step = parameters.n_step
+        self.gamma = parameters.gamma
         self._initialize()
