@@ -289,10 +289,11 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
             smoothed_completion = smoothed_completion * smoothing + completion * (1.0 - smoothing)
 
             if episode_idx % train_params.checkpoint_interval == 0:
-                torch.save(policy.qnetwork_local, f'./checkpoints/{train_params.policy}' + training_id + '-' + str(episode_idx) + '.pth')
+                env_number = env_idx + 1
+                torch.save(policy.qnetwork_local, f'./checkpoints/Progressive_incremental_{train_params.policy}_env_{env_number}' + training_id + '-' + str(episode_idx) + '.pth')
 
                 if train_params.save_replay_buffer:
-                    policy.save_replay_buffer(f'./replay_buffers/{train_params.policy}' + training_id + '-' + str(episode_idx) + '.pkl')
+                    policy.save_replay_buffer(f'./replay_buffers/Progressive_incremental_{train_params.policy}_env_{env_number}' + training_id + '-' + str(episode_idx) + '.pkl')
 
                 if train_params.render:
                     env_renderer.close_window()
@@ -502,20 +503,87 @@ if __name__ == "__main__":
     #         "seed": 0
     #     },
     # ]
+
     env_params = [
         {
             # Test_0
+            "n_agents": 3,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 2,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1/50,
+            "seed": 0
+        },
+          {
+            # Test_1
+            "n_agents": 4,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 2,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1/50,
+            "seed": 0
+        },
+          {
+            # Test_2
+            "n_agents": 5,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 2,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1/50,
+            "seed": 0
+        },
+          {
+            # Test_3
+            "n_agents": 6,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 2,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1/100,
+            "seed": 0
+        },
+           {
+            # Test_4
             "n_agents": 7,
             "x_dim": 30,
             "y_dim": 30,
             "n_cities": 2,
             "max_rails_between_cities": 2,
             "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 0,
+            "malfunction_rate": 1/100,
+            "seed": 0
+        },
+           {
+            # Test_5
+            "n_agents": 8,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 2,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1/100,
+            "seed": 0
+        },
+           {
+            # Test_6
+            "n_agents": 9,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 2,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1/100,
             "seed": 0
         },
         {
-            # Test_1
+            # Test_7
             "n_agents": 10,
             "x_dim": 30,
             "y_dim": 30,
@@ -525,8 +593,63 @@ if __name__ == "__main__":
             "malfunction_rate": 1 / 100,
             "seed": 0
         },
+          {
+            # Test_8
+            "n_agents": 10,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 100,
+            "seed": 0
+        },
+             {
+            # Test_9
+            "n_agents": 11,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 100,
+            "seed": 0
+        },
+             {
+            # Test_10
+            "n_agents": 12,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 100,
+            "seed": 0
+        },
+             {
+            # Test_11
+            "n_agents": 13,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 100,
+            "seed": 0
+        },
+             {
+            # Test_12
+            "n_agents": 14,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
+            "max_rails_between_cities": 2,
+            "max_rail_pairs_in_city": 2,
+            "malfunction_rate": 1 / 100,
+            "seed": 0
+        },
         {
-            # Test_2
+            # Test_13
             "n_agents": 20,
             "x_dim": 30,
             "y_dim": 30,
@@ -536,138 +659,72 @@ if __name__ == "__main__":
             "malfunction_rate": 1 / 200,
             "seed": 0
         },
-        {
-            # Test_3
-            "n_agents": 50,
+             {
+            # Test_14
+            "n_agents": 15,
             "x_dim": 30,
-            "y_dim": 35,
+            "y_dim": 30,
             "n_cities": 3,
             "max_rails_between_cities": 2,
             "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 400,
+            "malfunction_rate": 1 / 100,
             "seed": 0
         },
-        {
-            # Test_4
-            "n_agents": 80,
-            "x_dim": 35,
+             {
+            # Test_15
+            "n_agents": 16,
+            "x_dim": 30,
             "y_dim": 30,
-            "n_cities": 5,
+            "n_cities": 3,
             "max_rails_between_cities": 2,
             "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
+            "malfunction_rate": 1 / 100,
             "seed": 0
         },
-        {
-            # Test_5
-            "n_agents": 80,
-            "x_dim": 45,
-            "y_dim": 35,
-            "n_cities": 7,
+             {
+            # Test_16
+            "n_agents": 17,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
             "max_rails_between_cities": 2,
             "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
+            "malfunction_rate": 1 / 100,
             "seed": 0
         },
-        {
-            # Test_6
-            "n_agents": 80,
-            "x_dim": 40,
-            "y_dim": 60,
-            "n_cities": 9,
+             {
+            # Test_17
+            "n_agents": 18,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
             "max_rails_between_cities": 2,
             "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
+            "malfunction_rate": 1 / 100,
             "seed": 0
         },
-        {
-            # Test_7
-            "n_agents": 80,
-            "x_dim": 60,
-            "y_dim": 40,
-            "n_cities": 13,
+             {
+            # Test_18
+            "n_agents": 19,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
             "max_rails_between_cities": 2,
             "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
+            "malfunction_rate": 1 / 100,
             "seed": 0
         },
-        {
-            # Test_8
-            "n_agents": 80,
-            "x_dim": 60,
-            "y_dim": 60,
-            "n_cities": 17,
+             {
+            # Test_19
+            "n_agents": 20,
+            "x_dim": 30,
+            "y_dim": 30,
+            "n_cities": 3,
             "max_rails_between_cities": 2,
             "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
+            "malfunction_rate": 1 / 100,
             "seed": 0
-        },
-        {
-            # Test_9
-            "n_agents": 100,
-            "x_dim": 80,
-            "y_dim": 120,
-            "n_cities": 21,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_10
-            "n_agents": 100,
-            "x_dim": 100,
-            "y_dim": 80,
-            "n_cities": 25,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_11
-            "n_agents": 200,
-            "x_dim": 100,
-            "y_dim": 100,
-            "n_cities": 29,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_12
-            "n_agents": 200,
-            "x_dim": 150,
-            "y_dim": 150,
-            "n_cities": 33,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_13
-            "n_agents": 400,
-            "x_dim": 150,
-            "y_dim": 150,
-            "n_cities": 37,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_14
-            "n_agents": 425,
-            "x_dim": 158,
-            "y_dim": 158,
-            "n_cities": 41,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
+        }
     ]
 
     obs_params = {
