@@ -1,30 +1,30 @@
 # This sweep file can be used to run hyper-parameter search using Weight & Biases tools
 # See: https://docs.wandb.com/sweeps
 
-# wandb sweep sweep_progressive_incremental.yaml
-program: reinforcement_learning/multi_agent_training_progressive_incremental.py
+# wandb sweep sweep_sarsa_gnn.yaml
+program: reinforcement_learning/multi_agent_training.py
 method: grid
-name: sweep_progressive
+name: sweep_gnn_sarsa
 metric:
     name: evaluation/smoothed_score
     goal: maximize
 parameters:
     n_episodes:
-        values: [1000]
+        values: [5000]
     hidden_size:
         # default: 256
         values: [512]
     buffer_size:
         # default: 50000
-        values: [500000]
+        values: [100000]
     batch_size:
         # default: 32
-        values: [128]
-    highest_level:
-        values: [19]
+        values: [32]
+    training_env_config:
+        values: [0, 1, 2]
     policy:
         values: ["sarsa"]
-    evaluation_env_config:
-        values: [19]
-    checkpoint_interval:
-        values: [1000]
+    use_graph_observator:
+        values: [True]
+    num_gnn_layers:
+        values: [3]

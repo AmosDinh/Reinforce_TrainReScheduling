@@ -17,6 +17,7 @@ from flatland.envs.rail_env import RailEnv, RailEnvActions
 from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.line_generators import sparse_line_generator
 from flatland.envs.observations import TreeObsForRailEnv
+from GraphObsForRailEnv import GraphObsForRailEnv
 
 from flatland.envs.malfunction_generators import ParamMalfunctionGen, MalfunctionParameters
 from flatland.envs.predictions import ShortestPathPredictorForRailEnv
@@ -73,7 +74,7 @@ def create_rail_env(env_params, tree_observation):
 
 
 def train_agent(train_params, train_env_params, eval_env_params, obs_params):
-    name=f'sweep_n_step_sarsa_{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}_nstep_{train_params.n_step}_gamma_{train_params.gamma}'
+    name=f'sweep_gnn_sarsa_{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}_nstep_{train_params.n_step}_gamma_{train_params.gamma}'
 
     try:
         import wandb
@@ -82,7 +83,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         # if not runname or runname == 'flatland-rl_run123':
         #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
         wandb.init(
-            mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
+            mode='disabled', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
             sync_tensorboard=True, 
             name=name,
             project='Reinforce_TrainReScheduling-reinforcement_learning')
@@ -123,20 +124,27 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
     # Observation builder
     predictor = ShortestPathPredictorForRailEnv(observation_max_path_depth)
-    tree_observation = TreeObsForRailEnv(max_depth=observation_tree_depth, predictor=predictor)
+    use_graph_observator = train_params.use_graph_observator
+    if use_graph_observator:
+        observation = GraphObsForRailEnv(predictor=predictor)
+    else:
+        observation = TreeObsForRailEnv(max_depth=observation_tree_depth, predictor=predictor)
 
     # Setup the environments
-    train_env = create_rail_env(train_env_params, tree_observation)
-    eval_env = create_rail_env(eval_env_params, tree_observation)
+    train_env = create_rail_env(train_env_params, observation)
+    eval_env = create_rail_env(eval_env_params, observation)
 
     # Setup renderer
     if train_params.render:
         env_renderer = RenderTool(train_env, gl="PGL")
 
-    # Calculate the state size given the depth of the tree observation and the number of features
-    n_features_per_node = train_env.obs_builder.observation_dim
-    n_nodes = sum([np.power(4, i) for i in range(observation_tree_depth + 1)]) # level 0 = 4**0, level 1 = 4**1, ...
-    state_size = n_features_per_node * n_nodes
+    if use_graph_observator:
+        state_size = 36
+    else:
+        # Calculate the state size given the depth of the tree observation and the number of features
+        n_features_per_node = train_env.obs_builder.observation_dim
+        n_nodes = sum([np.power(4, i) for i in range(observation_tree_depth + 1)]) # level 0 = 4**0, level 1 = 4**1, ...
+        state_size = n_features_per_node * n_nodes
 
     # The action space of flatland is 5 discrete actions
     action_size = 5
@@ -233,8 +241,12 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         # Build initial agent-specific observations
         for agent in train_env.get_agent_handles():
             if obs[agent]:
-                agent_obs[agent] = normalize_observation(obs[agent], observation_tree_depth, observation_radius=observation_radius)
-                agent_prev_obs[agent] = agent_obs[agent].copy()
+                if not use_graph_observator:
+                    agent_obs[agent] = normalize_observation(obs[agent], observation_tree_depth, observation_radius=observation_radius)
+                    agent_prev_obs[agent] = agent_obs[agent].copy()
+                else:
+                    agent_obs[agent] = obs[agent]
+                    agent_prev_obs[agent] = obs[agent]
 
         # Run episode
         for step in range(max_steps):
@@ -276,8 +288,11 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
                     learn_timer.start()
                     policy.step(agent_prev_obs[agent], agent_prev_action[agent], all_rewards[agent], agent_obs[agent], action_dict[agent],  done[agent])
                     learn_timer.end()
+                    if not use_graph_observator:
+                        agent_prev_obs[agent] = agent_obs[agent].copy()
+                    else:
+                        agent_prev_obs[agent] = agent_obs[agent]
 
-                    agent_prev_obs[agent] = agent_obs[agent].copy()
                     agent_prev_action[agent] = action_dict[agent]
 
                     # make new variable
@@ -286,7 +301,10 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
                 # Preprocess the new observations
                 if next_obs[agent]:
                     preproc_timer.start()
-                    agent_obs[agent] = normalize_observation(next_obs[agent], observation_tree_depth, observation_radius=observation_radius)
+                    if not use_graph_observator:
+                        agent_obs[agent] = normalize_observation(next_obs[agent], observation_tree_depth, observation_radius=observation_radius)
+                    else:
+                        agent_obs[agent] = next_obs[agent]
                     preproc_timer.end()
 
                 score += all_rewards[agent]
@@ -423,6 +441,7 @@ def eval_policy(env, policy, train_params, obs_params):
     n_eval_episodes = train_params.n_evaluation_episodes
     tree_depth = obs_params.observation_tree_depth
     observation_radius = obs_params.observation_radius
+    use_graph_observator = train_params.use_graph_observator
 
     scores = []
     completions = []
@@ -443,7 +462,10 @@ def eval_policy(env, policy, train_params, obs_params):
         for step in range(max_steps):
             for agent in env.get_agent_handles():
                 if obs[agent]:
-                    agent_obs[agent] = normalize_observation(obs[agent], tree_depth=tree_depth, observation_radius=observation_radius)
+                    if not use_graph_observator:
+                        agent_obs[agent] = normalize_observation(obs[agent], tree_depth=tree_depth, observation_radius=observation_radius)
+                    else:
+                        agent_obs[agent] = obs[agent]
 
                 action = 0
                 if info['action_required'][agent]:
@@ -501,6 +523,9 @@ if __name__ == "__main__":
     parser.add_argument("--obstreedepth", help="depth of obs tree", default=2, type=int)
     parser.add_argument("--expected_sarsa_temperature", help="temperature for learning Q value", default=1.0, type=float)
     parser.add_argument("--n_step", help="Number of reward steps to accumulate (e.g for n-step sarsa)", default=1, type=int)
+    parser.add_argument("--use_graph_observator", help="custom graph observator", default=False, type=bool)
+    parser.add_argument("--num_gnn_layers", help="number of gnn layers", default=1, type=int)
+
     training_params = parser.parse_args()
 
     # env_params = [
@@ -735,6 +760,8 @@ if __name__ == "__main__":
 
     os.environ["OMP_NUM_THREADS"] = str(training_params.num_threads)
     
-
+    # training_params.use_graph_observator = True
+    # training_params.num_gnn_layers = 3
+    # training_params.policy = 'sarsa'
     print('\n🚂 Training policy: {}'.format(training_params.policy))
     train_agent(training_params, Namespace(**training_env_params), Namespace(**evaluation_env_params), Namespace(**obs_params))

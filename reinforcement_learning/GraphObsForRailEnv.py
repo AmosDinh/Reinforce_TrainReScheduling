@@ -45,8 +45,11 @@ class GraphObsForRailEnv(ObservationBuilder):
 
     def set_env(self, env: Environment):
         super().set_env(env)
+        if self.predictor:
+            self.predictor.set_env(self.env)
 
     def reset(self):
+
         self.rail_obs = np.zeros((self.env.height, self.env.width, 16))
         for i in range(self.rail_obs.shape[0]):
             for j in range(self.rail_obs.shape[1]):
@@ -139,20 +142,25 @@ class GraphObsForRailEnv(ObservationBuilder):
             node_lookup_cleaned[coords] = (curr_index, rail_matrix, leave_directions, enter_directions, length)
 
         num_nodes = index # not -1, because we start at 0
+        
+        self.num_nodes_collapsed = curr_index + 1
 
         self.adjacency_matrix = np.zeros((num_nodes,num_nodes))
         # feature matrix contains
         num_nodes = len(node_lookup_cleaned)
         edge_index = []
-        # the base rail type (16 bit), the length of the segment
-        self.rail_types_facing_north = torch.zeros((num_nodes, 16))
-        self.rail_types_facing_east = torch.zeros((num_nodes, 16))
-        self.rail_types_facing_south = torch.zeros((num_nodes, 16))
-        self.rail_types_facing_west = torch.zeros((num_nodes, 16))
 
-        self.rail_lengths = torch.zeros((num_nodes, 1))
+        
+        # the base rail type (16 bit), the length of the segment
+        self.rail_types_facing_north = torch.zeros((self.num_nodes_collapsed, 16))
+        self.rail_types_facing_east = torch.zeros((self.num_nodes_collapsed, 16))
+        self.rail_types_facing_south = torch.zeros((self.num_nodes_collapsed, 16))
+        self.rail_types_facing_west = torch.zeros((self.num_nodes_collapsed, 16))
+
+        self.rail_lengths = torch.zeros((self.num_nodes_collapsed, 1))
         #self.edge_index_index = {}
         
+        # connect the nodes (create edge index of graph)
         for coords, (i, rail_byte, leave_directions, enter_directions, lengths) in node_lookup_cleaned.items():
             # (for straights, the allowed leave directions are the same as the allowed enter directions and the same for all collapsed segments
             # therefore there is no issue with all of them sharing the same features)
@@ -189,17 +197,22 @@ class GraphObsForRailEnv(ObservationBuilder):
         # create the base graph structure
         self.edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
         # self.graph = Data(edge_index=edge_index)
+        
         self.num_nodes = num_nodes
         self.node_lookup = node_lookup_cleaned
 
         self.node_index_to_coords = {}
         for coords, (i, rail_byte, leave_directions, enter_directions, lengths) in node_lookup_cleaned.items():
-            if i in self.node_index_to_coords:
+            self.node_index_to_coords[i] = [coords]
+            if index in self.node_index_to_coords:
                 self.node_index_to_coords[i].append(coords)
             else:
                 self.node_index_to_coords[i] = [coords]
 
-        # this "returns": edge_index, num_nodes, rail_types (north, east, south, west), rail_lengths, node_lookup, node_index_to_coords
+        
+
+        self.location_has_target = {tuple(agent.target): 1 for agent in self.env.agents}
+        # this "returns": edge_index, num_nodes, rail_types (north, east, south, west), rail_lengths, node_lookup, node_index_to_coords, num_nodes_collapsed
 
     def get_many(self, handles: Optional[List[int]] = None):
         """
@@ -291,16 +304,22 @@ class GraphObsForRailEnv(ObservationBuilder):
         # 11 timestep when other agent will be on this node 1
 
         # Here information about the agent itself is stored
-        x = torch.zeros((self.num_nodes, 36))
-        x[node, 32] = 1.0  # 8. Other agent speed (min fractional speed)
+        x = torch.zeros((self.num_nodes_collapsed, 36))
+        x[:, 32] = 1.0  # 8. Other agent speed (min fractional speed)
         if agent.direction == 0:
             x[:,0:16] = self.rail_types_facing_north
+            direction_mapping = {0: 0, 1: 1, 2: 2, 3: 3}
         elif agent.direction == 1:
             x[:,0:16] = self.rail_types_facing_east
+            direction_mapping = {0: 3, 1: 0, 2: 1, 3: 2}
         elif agent.direction == 2:
             x[:,0:16] = self.rail_types_facing_south
+            direction_mapping = {0: 2, 1: 3, 2: 0, 3: 1}
         elif agent.direction == 3:
             x[:,0:16] = self.rail_types_facing_west
+            direction_mapping = {0: 1, 1: 2, 2: 3, 3: 0}
+
+        
 
         x[:,16] = self.rail_lengths.squeeze()
 
@@ -310,7 +329,7 @@ class GraphObsForRailEnv(ObservationBuilder):
                                           agent.direction)]
         index_of_node = -1
         index_of_target = -1
-        for node in range(self.graph.num_nodes):
+        for node in range(self.num_nodes_collapsed):
             positions = self.node_index_to_coords[node]  # assuming you have a mapping of node indices to positions
             
             for position in positions:
@@ -320,7 +339,7 @@ class GraphObsForRailEnv(ObservationBuilder):
 
                     x[node, 18] = agent.speed_counter.speed  # 3.5.1 Self speed
                     
-                    x[node, 19 + agent.direction] = 1  # 3.5.2 Self direction (one-hot encoding)
+                    x[node, 19 + direction_mapping[agent.direction]] = 1  # 3.5.2 Self direction (one-hot encoding)
                    
                     x[node, 23] = dist_min_to_target  # 3.5.3 Distance to target
                     index_of_node = node
@@ -333,7 +352,7 @@ class GraphObsForRailEnv(ObservationBuilder):
                     x[node, 25] = 1
                     
                     other_direction = self.location_has_agent_direction.get(position, 0)  # 5.5 Other direction (one-hot encoding)
-                    x[node, 26 + other_direction] = 1
+                    x[node, 26 + direction_mapping[other_direction]] = 1
                 
                 if position in self.location_has_target and position != agent.target:  # 6. If other target
                     x[node, 30] = 1
@@ -341,7 +360,7 @@ class GraphObsForRailEnv(ObservationBuilder):
                 malfunction_time = self.location_has_agent_malfunction.get(position, 0)  # 7. If other malfunction
                 x[node, 31] = malfunction_time
                 
-                x[node, 32] = torch.min(x[node, 32], self.location_has_agent_speed.get(position, 1.0))  # 8. Other agent speed (min fractional speed)
+                x[node, 32] = torch.min(x[node, 32], torch.tensor(self.location_has_agent_speed.get(position, 1.0)))  # 8. Other agent speed (min fractional speed)
               
                 
                 

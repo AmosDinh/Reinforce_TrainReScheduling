@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from reinforcement_learning.model import DuelingQNetwork, QNetwork
+from reinforcement_learning.model import DuelingQNetwork, QNetwork, QGINWithPooling
 from reinforcement_learning.policy import Policy
 
 from reinforcement_learning.ReplayBuffer import ReplayBuffer
@@ -31,6 +31,7 @@ class DeepPolicy(Policy):
         self.expected_sarsa = False
         self.expected_sarsa_temperature = 1.0
         self.n_step = 1
+        self.parameters = parameters
 
         self.hidsize = 1
 
@@ -59,13 +60,22 @@ class DeepPolicy(Policy):
 
         # Q-Network
         if self.dueling_dqn or self.double_dueling_dqn:
-            Network_Type = DuelingQNetwork
+            if self.parameters.use_graph_observator:
+                raise ValueError("Dueling DQN is not supported with graph observator")
+            else:
+                Network_Type = DuelingQNetwork
         elif self.dqn or self.double_dqn or self.sarsa or self.expected_sarsa:
-            Network_Type = QNetwork
+            if self.parameters.use_graph_observator:
+                Network_Type = QGINWithPooling
+            else:
+                Network_Type = QNetwork
         else:
             raise ValueError("One of double_dueling_dqn, dueling_dqn, double_dqn, dqn, sarsa must be True")
         
-        self.qnetwork_local = Network_Type(self.state_size, self.action_size, hidsize1=self.hidsize, hidsize2=self.hidsize).to(self.device)
+        if self.parameters.use_graph_observator:
+            self.qnetwork_local = Network_Type(self.state_size, self.action_size, hidden_dim=self.hidsize, num_layers=self.parameters.num_gnn_layers).to(self.device)
+        else:
+            self.qnetwork_local = Network_Type(self.state_size, self.action_size, hidsize1=self.hidsize, hidsize2=self.hidsize).to(self.device)
 
         if not self.evaluation_mode:
             self.qnetwork_target = copy.deepcopy(self.qnetwork_local)
@@ -76,7 +86,11 @@ class DeepPolicy(Policy):
             self.loss = 0.0
 
     def act(self, state, eps=0.):
-        state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
+        if self.parameters.use_graph_observator:
+            state = (state[0].to(self.device), state[1], state[2])
+        else:
+            state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
+
         self.qnetwork_local.eval()
         with torch.no_grad():
             action_values = self.qnetwork_local(state)
@@ -92,7 +106,7 @@ class DeepPolicy(Policy):
         assert not self.evaluation_mode, "Policy has been initialized for evaluation only."
 
         # Save experience in replay memory
-        self.memory.add(state, action, reward, next_state, next_action, done)
+        self.memory.add(state, action, reward, next_state, next_action, done, self.parameters.use_graph_observator)
 
         # Learn every UPDATE_EVERY time steps.
         self.t_step = (self.t_step + 1) % self.update_every
@@ -101,8 +115,8 @@ class DeepPolicy(Policy):
             if len(self.memory) > self.buffer_min_size and len(self.memory) > self.batch_size and len(self.memory) > self.n_step*(self.batch_size//10):
                 self._learn()
 
-    def _learn(self):
-        experiences = self.memory.sample(n=self.n_step, gamma=self.gamma)
+
+    def _calc(self, experiences):
 
         # S_t, A_t, R_t1, S_t1, done
         S_t, A_t, R_t1, S_t1, A_t1, dones = experiences
@@ -152,12 +166,33 @@ class DeepPolicy(Policy):
         # Compute loss
         # Learn bellmans equation with mse: Q(s,a) = r + γ * max_{a'}(Q(s', a')) -> minimize Q(s,a) - (r + γ * max_{a'}(Q(s', a'))) 
         # This is equivalent to saying Q(s,a) = Q(s,a) + (⍺) (r + γ * max_{a'}(Q(s', a')) - Q(s,a))
-        self.loss = F.mse_loss(q_expected, q_targets)
+        loss = F.mse_loss(q_expected, q_targets)
+        return loss
 
-        # Minimize the loss
-        self.optimizer.zero_grad()
-        self.loss.backward()
-        self.optimizer.step()
+    def _learn(self):
+        if self.parameters.use_graph_observator:
+            # compute each sample individually
+            self.optimizer.zero_grad()
+            experiences = self.memory.sample(n=self.n_step, gamma=self.gamma, use_graph_observator=True)
+            for i in range(self.batch_size):
+                S_t, A_t, R_t1, S_t1, A_t1, dones = [e[i] for e in experiences]
+                A_t = A_t.unsqueeze(0)
+                A_t1 = A_t1.unsqueeze(0)
+                R_t1 = R_t1.unsqueeze(0)
+                dones = dones.unsqueeze(0)
+                exp = (S_t, A_t, R_t1, S_t1, A_t1, dones)
+                self.loss = self._calc(exp)
+                self.loss.backward()
+            self.optimizer.step()
+
+        else:
+            experiences = self.memory.sample(n=self.n_step, gamma=self.gamma)
+            self.loss = self._calc(experiences)
+
+            # Minimize the loss
+            self.optimizer.zero_grad()
+            self.loss.backward()
+            self.optimizer.step()
 
         # Update target network
         self._soft_update(self.qnetwork_local, self.qnetwork_target, self.tau)
