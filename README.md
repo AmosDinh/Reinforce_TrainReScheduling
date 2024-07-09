@@ -6,20 +6,24 @@ We seek to minimize the time it takes to bring all the agents to their respectiv
 
 # Usage
 
-    conda create --name rl python=3.10.14
+    conda create --n rl python=3.8
+
+    conda activate rl
 
     pip install -r requirements.txt
 
-# Weights and Biases usage:
-Key auf Whatsapp (wird beim ersten ausführen nachgefragt, ansonsten auf linux: export WANDB_API_KEY=YOUR_API_KEY) <br>
-Loggt einfach die Tensorboard runs (benutzt den tensorboard syntax mit: writer.add_scalar(...)) <br>
-Für einen run kann der Run-Name angepasst werden in multi_agent_training.py: <br>
-`wandb.init(sync_tensorboard=True, name="flatland-rl_run1", project='Reinforce_TrainRescheduling')`
+    
 
+# (Not required) Weights and Biases usage:
+Set wandb key on linux: WANDB_API_KEY=YOUR_API_KEY 
+Our tracked metrics: [https://wandb.ai/Reinforce_Team/Reinforce_TrainRescheduling](https://wandb.ai/Reinforce_Team/Reinforce_TrainRescheduling)
 <br>
-Link: [https://wandb.ai/Reinforce_Team/Reinforce_TrainRescheduling](https://wandb.ai/Reinforce_Team/Reinforce_TrainRescheduling)
 
 
-# Agents:
-In file `reinforcement_learning/deep_policy` there is the base class which  defines dqn, double_dqn, dueling_dqn and double_dueling_dqn
+# Files:
+1. In file `reinforcement_learning/deep_policy.py` there is the base class which  defines dqn, double_dqn, dueling_dqn and double_dueling_dqn, sarsa, expected sarsa
+2. File `reinforcement_learning/model.py` contains the torch model definitions
+3. `reinforcement_learning/multi_agent_training_progressive_incremental.py` and `reinforcement_learning/multi_agent_training_progressive.py` contain the training code where the agent is trained with incrementally increasing environment difficulty (otherwise almost identical to `reinforcement_learning/multi_agent_training.py`)
+4. 
+
 
