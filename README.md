@@ -8,7 +8,7 @@ We seek to minimize the time it takes to bring all the agents to their respectiv
     git clone https://github.com/AmosDinh/Reinforce_TrainReScheduling
     cd Reinfore_TrainReScheduling
 
-    conda create --n rl python=3.8
+    conda create -n rl python=3.8
 
     conda activate rl
 
