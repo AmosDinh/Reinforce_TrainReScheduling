@@ -42,7 +42,7 @@ try:
     #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
 
     wandb.init(
-        mode="online",  # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
+        mode="offline",  # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
         sync_tensorboard=True,
         # name=runname,
         project="Reinforce_TrainReScheduling-reinforcement_learning",

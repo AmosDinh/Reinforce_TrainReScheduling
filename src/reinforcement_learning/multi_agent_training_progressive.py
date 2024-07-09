@@ -92,7 +92,7 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
             name = f"{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}"
 
         wandb.init(
-            mode="online",  # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
+            mode="offline",  # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
             sync_tensorboard=True,
             name=name,
             project="Reinforce_TrainReScheduling-reinforcement_learning",
