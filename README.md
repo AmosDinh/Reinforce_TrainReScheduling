@@ -5,12 +5,19 @@
 We seek to minimize the time it takes to bring all the agents to their respective target.
 
 # Usage
+    git clone https://github.com/AmosDinh/Reinforce_TrainReScheduling
+    cd Reinfore_TrainReScheduling
 
     conda create --n rl python=3.8
 
     conda activate rl
 
     pip install -r requirements.txt
+
+    cd src 
+
+    python execute_local_sweep.py sweeps/sweep_policies.yaml
+
 
     
 
