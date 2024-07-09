@@ -18,7 +18,10 @@ from flatland.envs.rail_generators import sparse_rail_generator
 from flatland.envs.line_generators import sparse_line_generator
 from flatland.envs.observations import TreeObsForRailEnv
 
-from flatland.envs.malfunction_generators import ParamMalfunctionGen, MalfunctionParameters
+from flatland.envs.malfunction_generators import (
+    ParamMalfunctionGen,
+    MalfunctionParameters,
+)
 from flatland.envs.predictions import ShortestPathPredictorForRailEnv
 
 base_dir = Path(__file__).resolve().parent.parent
@@ -26,9 +29,15 @@ sys.path.append(str(base_dir))
 
 from utils.timer import Timer
 from utils.observation_utils import normalize_observation
-from reinforcement_learning.deep_policy import DQN, DoubleDQN, DuelingDQN, DoubleDuelingDQN, SARSA, ExpectedSARSA
-
-
+from reinforcement_learning.deep_policy import (
+    DQN,
+    DoubleDQN,
+    DuelingDQN,
+    DoubleDuelingDQN,
+    SARSA,
+    ExpectedSARSA,
+)
+from envs import ENV_PARAMS
 
 
 """
@@ -51,25 +60,25 @@ def create_rail_env(env_params, tree_observation):
 
     # Break agents from time to time
     malfunction_parameters = MalfunctionParameters(
-        malfunction_rate=env_params.malfunction_rate,
-        min_duration=20,
-        max_duration=50
+        malfunction_rate=env_params.malfunction_rate, min_duration=20, max_duration=50
     )
 
     return RailEnv(
-        width=x_dim, height=y_dim,
+        width=x_dim,
+        height=y_dim,
         rail_generator=sparse_rail_generator(
             max_num_cities=n_cities,
             grid_mode=False,
             max_rails_between_cities=max_rails_between_cities,
-            max_rail_pairs_in_city=max_rail_pairs_in_city
+            max_rail_pairs_in_city=max_rail_pairs_in_city,
         ),
         line_generator=sparse_line_generator(),
         number_of_agents=n_agents,
         malfunction_generator=ParamMalfunctionGen(malfunction_parameters),
         obs_builder_object=tree_observation,
-        random_seed=seed
+        random_seed=seed,
     )
+
 
 def train_agent(train_params, train_env_params_list, eval_env_params, obs_params):
     try:
@@ -78,36 +87,38 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
         # runname = 'flatland-rl_run123' # specify your run name
         # if not runname or runname == 'flatland-rl_run123':
         #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
-        name=f'{train_params.policy}_highest_env_{train_params.highest_level}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}'
+        name = f"{train_params.policy}_highest_env_{train_params.highest_level}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}"
         if len(train_env_params_list) == 1:
-            name=f'{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}'
-            
+            name = f"{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}"
+
         wandb.init(
-            mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
-            sync_tensorboard=True, 
-            name=name, 
-            project='Reinforce_TrainReScheduling-reinforcement_learning')
-        
+            mode="online",  # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
+            sync_tensorboard=True,
+            name=name,
+            project="Reinforce_TrainReScheduling-reinforcement_learning",
+        )
+
     except ImportError:
         print("Install wandb to log to Weights & Biases")
 
-
     # Unique ID for this training
     now = datetime.now()
-    training_id = now.strftime('%y%m%d%H%M%S')
-
-   
+    training_id = now.strftime("%y%m%d%H%M%S")
 
     # Observation builder
     predictor = ShortestPathPredictorForRailEnv(obs_params.observation_max_path_depth)
-    tree_observation = TreeObsForRailEnv(max_depth=obs_params.observation_tree_depth, predictor=predictor)
+    tree_observation = TreeObsForRailEnv(
+        max_depth=obs_params.observation_tree_depth, predictor=predictor
+    )
 
     # Calculate the state size given the depth of the tree observation and the number of features
     train_env = create_rail_env(train_env_params_list[0], tree_observation)
     eval_env = create_rail_env(eval_env_params, tree_observation)
 
     n_features_per_node = train_env.obs_builder.observation_dim
-    n_nodes = sum([np.power(4, i) for i in range(obs_params.observation_tree_depth + 1)]) # level 0 = 4**0, level 1 
+    n_nodes = sum(
+        [np.power(4, i) for i in range(obs_params.observation_tree_depth + 1)]
+    )  # level 0 = 4**0, level 1
     state_size = n_features_per_node * n_nodes
     action_size = 5  # The action space of flatland is 5 discrete actions
 
@@ -117,18 +128,24 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
     smoothed_completion = 0.0
     smoothed_eval_completion = 0.0
 
-    if train_params.policy == 'dqn':
+    if train_params.policy == "dqn":
         policy = DQN(state_size, action_size, train_params)
-    elif train_params.policy == 'double_dqn':
+    elif train_params.policy == "double_dqn":
         policy = DoubleDQN(state_size, action_size, train_params)
-    elif train_params.policy == 'dueling_dqn':
+    elif train_params.policy == "dueling_dqn":
         policy = DuelingDQN(state_size, action_size, train_params)
-    elif train_params.policy == 'double_dueling_dqn':
+    elif train_params.policy == "double_dueling_dqn":
         policy = DoubleDuelingDQN(state_size, action_size, train_params)
-    elif train_params.policy == 'sarsa':
+    elif train_params.policy == "sarsa":
         policy = SARSA(state_size, action_size, train_params)
-    elif train_params.policy == 'expected_sarsa':
-        policy = ExpectedSARSA(state_size, action_size, train_params, evaluation_mode=False, expected_sarsa_temperature=train_params.expected_sarsa_temperature)
+    elif train_params.policy == "expected_sarsa":
+        policy = ExpectedSARSA(
+            state_size,
+            action_size,
+            train_params,
+            evaluation_mode=False,
+            expected_sarsa_temperature=train_params.expected_sarsa_temperature,
+        )
 
     # Load existing replay buffer
     if train_params.restore_replay_buffer:
@@ -136,14 +153,24 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
             policy.load_replay_buffer(train_params.restore_replay_buffer)
             policy.test()
         except RuntimeError as e:
-            print("\n🛑 Could't load replay buffer, were the experiences generated using the same tree depth?")
+            print(
+                "\n🛑 Could't load replay buffer, were the experiences generated using the same tree depth?"
+            )
             print(e)
             exit(1)
 
-    print("\n💾 Replay buffer status: {}/{} experiences".format(len(policy.memory.memory), train_params.buffer_size))
-    hdd = psutil.disk_usage('/')
-    if train_params.save_replay_buffer and (hdd.free / (2 ** 30)) < 500.0:
-        print("⚠️  Careful! Saving replay buffers will quickly consume a lot of disk space. You have {:.2f}gb left.".format(hdd.free / (2 ** 30)))
+    print(
+        "\n💾 Replay buffer status: {}/{} experiences".format(
+            len(policy.memory.memory), train_params.buffer_size
+        )
+    )
+    hdd = psutil.disk_usage("/")
+    if train_params.save_replay_buffer and (hdd.free / (2**30)) < 500.0:
+        print(
+            "⚠️  Careful! Saving replay buffers will quickly consume a lot of disk space. You have {:.2f}gb left.".format(
+                hdd.free / (2**30)
+            )
+        )
 
     # TensorBoard writer
     writer = SummaryWriter()
@@ -162,20 +189,26 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
         if train_params.render:
             env_renderer = RenderTool(train_env, gl="PGL")
 
-        print("\n🚉 Training {} trains on {}x{} grid for {} episodes, evaluating on {} episodes every {} episodes. Training id '{}' Env {}/{}.\n".format(
-            train_env_params.n_agents,
-            train_env_params.x_dim, train_env_params.y_dim,
-            train_params.n_episodes,
-            train_params.n_evaluation_episodes,
-            train_params.checkpoint_interval,
-            training_id,
-            env_idx + 1,
-            train_params.highest_level + 1 if train_params.highest_level is not None else 1,
-        ))
+        print(
+            "\n🚉 Training {} trains on {}x{} grid for {} episodes, evaluating on {} episodes every {} episodes. Training id '{}' Env {}/{}.\n".format(
+                train_env_params.n_agents,
+                train_env_params.x_dim,
+                train_env_params.y_dim,
+                train_params.n_episodes,
+                train_params.n_evaluation_episodes,
+                train_params.checkpoint_interval,
+                training_id,
+                env_idx + 1,
+                (
+                    train_params.highest_level + 1
+                    if train_params.highest_level is not None
+                    else 1
+                ),
+            )
+        )
         episode_idx = 0
         for local_episode_idx in range(train_params.n_episodes):
             episode_idx += 1
-
 
             step_timer = Timer()
             reset_timer = Timer()
@@ -207,23 +240,33 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
             # Build initial agent-specific observations
             for agent in train_env.get_agent_handles():
                 if obs[agent]:
-                    agent_obs[agent] = normalize_observation(obs[agent], obs_params.observation_tree_depth, observation_radius=obs_params.observation_radius)
+                    agent_obs[agent] = normalize_observation(
+                        obs[agent],
+                        obs_params.observation_tree_depth,
+                        observation_radius=obs_params.observation_radius,
+                    )
                     agent_prev_obs[agent] = agent_obs[agent].copy()
 
             # Run episode
             for step in range(max_steps):
                 inference_timer.start()
                 for agent in train_env.get_agent_handles():
-                    if info['action_required'][agent]:
-                        update_values[agent] = True  # only learn from timesteps where somethings happened
-                        action = policy.act(agent_obs[agent], eps=train_params.eps_start)
+                    if info["action_required"][agent]:
+                        update_values[agent] = (
+                            True  # only learn from timesteps where somethings happened
+                        )
+                        action = policy.act(
+                            agent_obs[agent], eps=train_params.eps_start
+                        )
 
                         action_count[action] += 1
                         actions_taken.append(action)
                     else:
                         # An action is not required if the train hasn't joined the railway network,
                         # if it already reached its target, or if is currently malfunctioning.
-                        update_values[agent] = False # only learn from timesteps where somethings happened
+                        update_values[agent] = (
+                            False  # only learn from timesteps where somethings happened
+                        )
                         action = 0
 
                     action_dict.update({agent: action})
@@ -235,20 +278,30 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
                 step_timer.end()
 
                 # Render an episode at some interval
-                if train_params.render and episode_idx % train_params.checkpoint_interval == 0:
+                if (
+                    train_params.render
+                    and episode_idx % train_params.checkpoint_interval == 0
+                ):
                     env_renderer.render_env(
                         show=True,
                         frames=False,
                         show_observations=False,
-                        show_predictions=False
+                        show_predictions=False,
                     )
 
                 # Update replay buffer and train agent
                 for agent in train_env.get_agent_handles():
-                    if update_values[agent] or done['__all__']:
+                    if update_values[agent] or done["__all__"]:
                         # Only learn from timesteps where somethings happened
                         learn_timer.start()
-                        policy.step(agent_prev_obs[agent], agent_prev_action[agent], all_rewards[agent], agent_obs[agent], action_dict[agent], done[agent])
+                        policy.step(
+                            agent_prev_obs[agent],
+                            agent_prev_action[agent],
+                            all_rewards[agent],
+                            agent_obs[agent],
+                            action_dict[agent],
+                            done[agent],
+                        )
                         learn_timer.end()
 
                         agent_prev_obs[agent] = agent_obs[agent].copy()
@@ -257,25 +310,33 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
                     # Preprocess the new observations
                     if next_obs[agent]:
                         preproc_timer.start()
-                        agent_obs[agent] = normalize_observation(next_obs[agent], obs_params.observation_tree_depth, observation_radius=obs_params.observation_radius)
+                        agent_obs[agent] = normalize_observation(
+                            next_obs[agent],
+                            obs_params.observation_tree_depth,
+                            observation_radius=obs_params.observation_radius,
+                        )
                         preproc_timer.end()
 
                     score += all_rewards[agent]
 
                 nb_steps = step
 
-                if done['__all__']:
+                if done["__all__"]:
                     break
 
             # Epsilon decay
-            train_params.eps_start = max(train_params.eps_end, train_params.eps_decay * train_params.eps_start)
+            train_params.eps_start = max(
+                train_params.eps_end, train_params.eps_decay * train_params.eps_start
+            )
 
             # Collect information about training
-            tasks_finished = sum([agent.state == TrainState.DONE for agent in train_env.agents])
+            tasks_finished = sum(
+                [agent.state == TrainState.DONE for agent in train_env.agents]
+            )
             completion = tasks_finished / max(1, train_env.get_num_agents())
-            normalized_score = score / (max_steps * train_env.get_num_agents()) #
+            normalized_score = score / (max_steps * train_env.get_num_agents())  #
 
-            if (np.sum(action_count) > 0):
+            if np.sum(action_count) > 0:
                 action_probs = action_count / np.sum(action_count)
             else:
                 action_probs = action_count
@@ -285,31 +346,49 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
                 actions_taken = [0]
 
             smoothing = 0.99
-            smoothed_normalized_score = smoothed_normalized_score * smoothing + normalized_score * (1.0 - smoothing)
-            smoothed_completion = smoothed_completion * smoothing + completion * (1.0 - smoothing)
+            smoothed_normalized_score = (
+                smoothed_normalized_score * smoothing
+                + normalized_score * (1.0 - smoothing)
+            )
+            smoothed_completion = smoothed_completion * smoothing + completion * (
+                1.0 - smoothing
+            )
 
             if episode_idx % train_params.checkpoint_interval == 0:
-                torch.save(policy.qnetwork_local, f'./checkpoints/{train_params.policy}' + training_id + '-' + str(episode_idx) + '.pth')
+                torch.save(
+                    policy.qnetwork_local,
+                    f"./checkpoints/{train_params.policy}"
+                    + training_id
+                    + "-"
+                    + str(episode_idx)
+                    + ".pth",
+                )
 
                 if train_params.save_replay_buffer:
-                    policy.save_replay_buffer(f'./replay_buffers/{train_params.policy}' + training_id + '-' + str(episode_idx) + '.pkl')
+                    policy.save_replay_buffer(
+                        f"./replay_buffers/{train_params.policy}"
+                        + training_id
+                        + "-"
+                        + str(episode_idx)
+                        + ".pkl"
+                    )
 
                 if train_params.render:
                     env_renderer.close_window()
 
             print(
-                '\r🚂 Ep {}'
-                '\t 🏆 Score: {:.3f}'
-                ' Avg: {:.3f}'
-                '\t Done: {:.2f}%'
-                ' Avg: {:.2f}%'
-                '\t 🎲 ϵ: {:.3f} '
-                '\t 🔀 Action Prob.: {}'
-                '\t ⏱️ Rst {:.3f}s'
-                '\t Step {:.3f}s'
-                '\t Lrn {:.3f}s'
-                '\t Preproc {:.3f}s'
-                '\t Tot {:.3f}s'.format(
+                "\r🚂 Ep {}"
+                "\t 🏆 Score: {:.3f}"
+                " Avg: {:.3f}"
+                "\t Done: {:.2f}%"
+                " Avg: {:.2f}%"
+                "\t 🎲 ϵ: {:.3f} "
+                "\t 🔀 Action Prob.: {}"
+                "\t ⏱️ Rst {:.3f}s"
+                "\t Step {:.3f}s"
+                "\t Lrn {:.3f}s"
+                "\t Preproc {:.3f}s"
+                "\t Tot {:.3f}s".format(
                     episode_idx,
                     normalized_score,
                     smoothed_normalized_score,
@@ -321,46 +400,165 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
                     step_timer.get(),
                     learn_timer.get(),
                     preproc_timer.get(),
-                    training_timer.get_current()
-                ), end=" ")
+                    training_timer.get_current(),
+                ),
+                end=" ",
+            )
 
-            if episode_idx % train_params.checkpoint_interval == 0 and train_params.n_evaluation_episodes > 0:
-                scores, completions, nb_steps_eval = eval_policy(eval_env, policy, train_params, obs_params)
+            if (
+                episode_idx % train_params.checkpoint_interval == 0
+                and train_params.n_evaluation_episodes > 0
+            ):
+                scores, completions, nb_steps_eval = eval_policy(
+                    eval_env, policy, train_params, obs_params
+                )
 
-                wandb.log({"evaluation/scores_min": np.min(scores), "step": episode_idx})
-                wandb.log({"evaluation/scores_max": np.max(scores), "step": episode_idx})
-                wandb.log({"evaluation/scores_mean": np.mean(scores), "step": episode_idx})
-                wandb.log({"evaluation/scores_std": np.std(scores), "step": episode_idx})
+                wandb.log(
+                    {"evaluation/scores_min": np.min(scores), "step": episode_idx}
+                )
+                wandb.log(
+                    {"evaluation/scores_max": np.max(scores), "step": episode_idx}
+                )
+                wandb.log(
+                    {"evaluation/scores_mean": np.mean(scores), "step": episode_idx}
+                )
+                wandb.log(
+                    {"evaluation/scores_std": np.std(scores), "step": episode_idx}
+                )
                 wandb.log({"evaluation/scores": np.array(scores), "step": episode_idx})
-                wandb.log({"evaluation/completions_min": np.min(completions), "step": episode_idx})
-                wandb.log({"evaluation/completions_max": np.max(completions), "step": episode_idx})
-                wandb.log({"evaluation/completions_mean": np.mean(completions), "step": episode_idx})
-                wandb.log({"evaluation/completions_std": np.std(completions), "step": episode_idx})
-                wandb.log({"evaluation/completions": np.array(completions), "step": episode_idx})
-                wandb.log({"evaluation/nb_steps_min": np.min(nb_steps_eval), "step": episode_idx})
-                wandb.log({"evaluation/nb_steps_max": np.max(nb_steps_eval), "step": episode_idx})
-                wandb.log({"evaluation/nb_steps_mean": np.mean(nb_steps_eval), "step": episode_idx})
-                wandb.log({"evaluation/nb_steps_std": np.std(nb_steps_eval), "step": episode_idx})
-                wandb.log({"evaluation/nb_steps": wandb.Histogram(np_histogram=np.histogram(np.array(nb_steps_eval))),
-                           "episode": episode_idx})
+                wandb.log(
+                    {
+                        "evaluation/completions_min": np.min(completions),
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/completions_max": np.max(completions),
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/completions_mean": np.mean(completions),
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/completions_std": np.std(completions),
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/completions": np.array(completions),
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/nb_steps_min": np.min(nb_steps_eval),
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/nb_steps_max": np.max(nb_steps_eval),
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/nb_steps_mean": np.mean(nb_steps_eval),
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/nb_steps_std": np.std(nb_steps_eval),
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/nb_steps": wandb.Histogram(
+                            np_histogram=np.histogram(np.array(nb_steps_eval))
+                        ),
+                        "episode": episode_idx,
+                    }
+                )
 
                 smoothing = 0.9
-                smoothed_eval_normalized_score = smoothed_eval_normalized_score * smoothing + np.mean(scores) * (1.0 - smoothing)
-                smoothed_eval_completion = smoothed_eval_completion * smoothing + np.mean(completions) * (1.0 - smoothing)
-                wandb.log({"evaluation/smoothed_score": smoothed_eval_normalized_score, "step": episode_idx})
-                wandb.log({"evaluation/smoothed_completion": smoothed_eval_completion, "step": episode_idx})
+                smoothed_eval_normalized_score = (
+                    smoothed_eval_normalized_score * smoothing
+                    + np.mean(scores) * (1.0 - smoothing)
+                )
+                smoothed_eval_completion = (
+                    smoothed_eval_completion * smoothing
+                    + np.mean(completions) * (1.0 - smoothing)
+                )
+                wandb.log(
+                    {
+                        "evaluation/smoothed_score": smoothed_eval_normalized_score,
+                        "step": episode_idx,
+                    }
+                )
+                wandb.log(
+                    {
+                        "evaluation/smoothed_completion": smoothed_eval_completion,
+                        "step": episode_idx,
+                    }
+                )
 
             wandb.log({"training/score": normalized_score, "step": episode_idx})
-            wandb.log({"training/smoothed_score": smoothed_normalized_score, "step": episode_idx})
+            wandb.log(
+                {
+                    "training/smoothed_score": smoothed_normalized_score,
+                    "step": episode_idx,
+                }
+            )
             wandb.log({"training/completion": np.mean(completion), "step": episode_idx})
-            wandb.log({"training/smoothed_completion": np.mean(smoothed_completion), "step": episode_idx})
+            wandb.log(
+                {
+                    "training/smoothed_completion": np.mean(smoothed_completion),
+                    "step": episode_idx,
+                }
+            )
             wandb.log({"training/nb_steps": nb_steps, "step": episode_idx})
-            wandb.log({"actions/distribution": np.array(actions_taken), "step": episode_idx})
-            wandb.log({"actions/nothing": action_probs[RailEnvActions.DO_NOTHING], "step": episode_idx})
-            wandb.log({"actions/left": action_probs[RailEnvActions.MOVE_LEFT], "step": episode_idx})
-            wandb.log({"actions/forward": action_probs[RailEnvActions.MOVE_FORWARD], "step": episode_idx})
-            wandb.log({"actions/right": action_probs[RailEnvActions.MOVE_RIGHT], "step": episode_idx})
-            wandb.log({"actions/stop": action_probs[RailEnvActions.STOP_MOVING], "step": episode_idx})
+            wandb.log(
+                {"actions/distribution": np.array(actions_taken), "step": episode_idx}
+            )
+            wandb.log(
+                {
+                    "actions/nothing": action_probs[RailEnvActions.DO_NOTHING],
+                    "step": episode_idx,
+                }
+            )
+            wandb.log(
+                {
+                    "actions/left": action_probs[RailEnvActions.MOVE_LEFT],
+                    "step": episode_idx,
+                }
+            )
+            wandb.log(
+                {
+                    "actions/forward": action_probs[RailEnvActions.MOVE_FORWARD],
+                    "step": episode_idx,
+                }
+            )
+            wandb.log(
+                {
+                    "actions/right": action_probs[RailEnvActions.MOVE_RIGHT],
+                    "step": episode_idx,
+                }
+            )
+            wandb.log(
+                {
+                    "actions/stop": action_probs[RailEnvActions.STOP_MOVING],
+                    "step": episode_idx,
+                }
+            )
             wandb.log({"training/epsilon": train_params.eps_start, "step": episode_idx})
             wandb.log({"training/buffer_size": len(policy.memory), "step": episode_idx})
             wandb.log({"training/loss": policy.loss, "step": episode_idx})
@@ -368,7 +566,9 @@ def train_agent(train_params, train_env_params_list, eval_env_params, obs_params
             wandb.log({"timer/step": step_timer.get(), "step": episode_idx})
             wandb.log({"timer/learn": learn_timer.get(), "step": episode_idx})
             wandb.log({"timer/preproc": preproc_timer.get(), "step": episode_idx})
-            wandb.log({"timer/total": training_timer.get_current(), "step": episode_idx})
+            wandb.log(
+                {"timer/total": training_timer.get_current(), "step": episode_idx}
+            )
 
 
 def format_action_prob(action_probs):
@@ -394,10 +594,10 @@ def eval_policy(env, policy, train_params, obs_params):
     for episode_idx in range(n_eval_episodes):
 
         obs, info = env.reset(regenerate_rail=True, regenerate_schedule=True)
-        
+
         max_steps = env._max_episode_steps
         action_dict = dict()
-        agent_obs = [None] * env.get_num_agents()    
+        agent_obs = [None] * env.get_num_agents()
 
         score = 0.0
 
@@ -406,10 +606,14 @@ def eval_policy(env, policy, train_params, obs_params):
         for step in range(max_steps):
             for agent in env.get_agent_handles():
                 if obs[agent]:
-                    agent_obs[agent] = normalize_observation(obs[agent], tree_depth=tree_depth, observation_radius=observation_radius)
+                    agent_obs[agent] = normalize_observation(
+                        obs[agent],
+                        tree_depth=tree_depth,
+                        observation_radius=observation_radius,
+                    )
 
                 action = 0
-                if info['action_required'][agent]:
+                if info["action_required"][agent]:
                     action = policy.act(agent_obs[agent], eps=0.0)
                 action_dict.update({agent: action})
 
@@ -420,7 +624,7 @@ def eval_policy(env, policy, train_params, obs_params):
 
             final_step = step
 
-            if done['__all__']:
+            if done["__all__"]:
                 break
 
         normalized_score = score / (max_steps * env.get_num_agents())
@@ -432,255 +636,128 @@ def eval_policy(env, policy, train_params, obs_params):
 
         nb_steps.append(final_step)
 
-    print("\t✅ Eval: score {:.3f} done {:.1f}%".format(np.mean(scores), np.mean(completions) * 100.0))
+    print(
+        "\t✅ Eval: score {:.3f} done {:.1f}%".format(
+            np.mean(scores), np.mean(completions) * 100.0
+        )
+    )
 
     return scores, completions, nb_steps
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("-n", "--n_episodes", help="number of episodes to run", default=2500, type=int)
-    parser.add_argument("-t", "--training_env_config", help="training config id (eg 0 for Test_0)", default=0, type=int)
-    parser.add_argument("-e", "--evaluation_env_config", help="evaluation config id (eg 0 for Test_0)", default=0, type=int)
-    parser.add_argument("--n_evaluation_episodes", help="number of evaluation episodes", default=25, type=int)
-    parser.add_argument("--checkpoint_interval", help="checkpoint interval", default=100, type=int)
+    parser.add_argument(
+        "-n", "--n_episodes", help="number of episodes to run", default=2500, type=int
+    )
+    parser.add_argument(
+        "-t",
+        "--training_env_config",
+        help="training config id (eg 0 for Test_0)",
+        default=0,
+        type=int,
+    )
+    parser.add_argument(
+        "-e",
+        "--evaluation_env_config",
+        help="evaluation config id (eg 0 for Test_0)",
+        default=0,
+        type=int,
+    )
+    parser.add_argument(
+        "--n_evaluation_episodes",
+        help="number of evaluation episodes",
+        default=25,
+        type=int,
+    )
+    parser.add_argument(
+        "--checkpoint_interval", help="checkpoint interval", default=100, type=int
+    )
     parser.add_argument("--eps_start", help="max exploration", default=1.0, type=float)
     parser.add_argument("--eps_end", help="min exploration", default=0.01, type=float)
-    parser.add_argument("--eps_decay", help="exploration decay", default=0.99, type=float)
-    parser.add_argument("--buffer_size", help="replay buffer size", default=int(1e5), type=int)
-    parser.add_argument("--buffer_min_size", help="min buffer size to start training", default=0, type=int)
-    parser.add_argument("--restore_replay_buffer", help="replay buffer to restore", default="", type=str)
-    parser.add_argument("--save_replay_buffer", help="save replay buffer at each evaluation interval", default=False, type=bool)
+    parser.add_argument(
+        "--eps_decay", help="exploration decay", default=0.99, type=float
+    )
+    parser.add_argument(
+        "--buffer_size", help="replay buffer size", default=int(1e5), type=int
+    )
+    parser.add_argument(
+        "--buffer_min_size",
+        help="min buffer size to start training",
+        default=0,
+        type=int,
+    )
+    parser.add_argument(
+        "--restore_replay_buffer", help="replay buffer to restore", default="", type=str
+    )
+    parser.add_argument(
+        "--save_replay_buffer",
+        help="save replay buffer at each evaluation interval",
+        default=False,
+        type=bool,
+    )
     parser.add_argument("--batch_size", help="minibatch size", default=128, type=int)
     parser.add_argument("--gamma", help="discount factor", default=0.99, type=float)
-    parser.add_argument("--tau", help="soft update of target parameters", default=1e-3, type=float)
-    parser.add_argument("--learning_rate", help="learning rate", default=0.5e-4, type=float)
-    parser.add_argument("--hidden_size", help="hidden size (2 fc layers)", default=128, type=int)
-    parser.add_argument("--update_every", help="how often to update the network", default=8, type=int)
-    parser.add_argument("--use_gpu", help="use GPU if available", default=False, type=bool)
-    parser.add_argument("--num_threads", help="number of threads PyTorch can use", default=1, type=int)
-    parser.add_argument("--render", help="render 1 episode in 100", default=False, type=bool)
-    parser.add_argument('--policy', help='Policy to use: options: dqn, double_dqn, dueling_dqn, double_dueling_dqn, sarsa, expected_sarsa', type=str)
+    parser.add_argument(
+        "--tau", help="soft update of target parameters", default=1e-3, type=float
+    )
+    parser.add_argument(
+        "--learning_rate", help="learning rate", default=0.5e-4, type=float
+    )
+    parser.add_argument(
+        "--hidden_size", help="hidden size (2 fc layers)", default=128, type=int
+    )
+    parser.add_argument(
+        "--update_every", help="how often to update the network", default=8, type=int
+    )
+    parser.add_argument(
+        "--use_gpu", help="use GPU if available", default=False, type=bool
+    )
+    parser.add_argument(
+        "--num_threads", help="number of threads PyTorch can use", default=1, type=int
+    )
+    parser.add_argument(
+        "--render", help="render 1 episode in 100", default=False, type=bool
+    )
+    parser.add_argument(
+        "--policy",
+        help="Policy to use: options: dqn, double_dqn, dueling_dqn, double_dueling_dqn, sarsa, expected_sarsa",
+        type=str,
+    )
     parser.add_argument("--obstreedepth", help="depth of obs tree", default=2, type=int)
-    parser.add_argument("--expected_sarsa_temperature", help="temperature for learning Q value", default=1.0, type=float)
-    parser.add_argument("--highest_level", help="highest training environment level", type=int)  # New optional parameter
-    parser.add_argument("--n_step", help="Number of reward steps to accumulate (e.g for n-step sarsa)", default=1, type=int)
+    parser.add_argument(
+        "--expected_sarsa_temperature",
+        help="temperature for learning Q value",
+        default=1.0,
+        type=float,
+    )
+    parser.add_argument(
+        "--highest_level", help="highest training environment level", type=int
+    )  # New optional parameter
+    parser.add_argument(
+        "--n_step",
+        help="Number of reward steps to accumulate (e.g for n-step sarsa)",
+        default=1,
+        type=int,
+    )
     training_params = parser.parse_args()
 
-    # env_params = [
-    #     {
-    #         # Test_0
-    #         "n_agents": 5,
-    #         "x_dim": 30,
-    #         "y_dim": 30,
-    #         "n_cities": 2,
-    #         "max_rails_between_cities": 2,
-    #         "max_rail_pairs_in_city": 1,
-    #         "malfunction_rate": 1 / 50,
-    #         "seed": 0
-    #     },
-    #     {
-    #         # Test_1
-    #         "n_agents": 10,
-    #         "x_dim": 30,
-    #         "y_dim": 30,
-    #         "n_cities": 2,
-    #         "max_rails_between_cities": 2,
-    #         "max_rail_pairs_in_city": 2,
-    #         "malfunction_rate": 1 / 100,
-    #         "seed": 0
-    #     },
-    #     {
-    #         # Test_2
-    #         "n_agents": 20,
-    #         "x_dim": 30,
-    #         "y_dim": 30,
-    #         "n_cities": 3,
-    #         "max_rails_between_cities": 2,
-    #         "max_rail_pairs_in_city": 2,
-    #         "malfunction_rate": 1 / 200,
-    #         "seed": 0
-    #     },
-    # ]
-    env_params = [
-        {
-            # Test_0
-            "n_agents": 7,
-            "x_dim": 30,
-            "y_dim": 30,
-            "n_cities": 2,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 0,
-            "seed": 0
-        },
-        {
-            # Test_1
-            "n_agents": 10,
-            "x_dim": 30,
-            "y_dim": 30,
-            "n_cities": 2,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 100,
-            "seed": 0
-        },
-        {
-            # Test_2
-            "n_agents": 20,
-            "x_dim": 30,
-            "y_dim": 30,
-            "n_cities": 3,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_3
-            "n_agents": 50,
-            "x_dim": 30,
-            "y_dim": 35,
-            "n_cities": 3,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 400,
-            "seed": 0
-        },
-        {
-            # Test_4
-            "n_agents": 80,
-            "x_dim": 35,
-            "y_dim": 30,
-            "n_cities": 5,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_5
-            "n_agents": 80,
-            "x_dim": 45,
-            "y_dim": 35,
-            "n_cities": 7,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_6
-            "n_agents": 80,
-            "x_dim": 40,
-            "y_dim": 60,
-            "n_cities": 9,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_7
-            "n_agents": 80,
-            "x_dim": 60,
-            "y_dim": 40,
-            "n_cities": 13,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_8
-            "n_agents": 80,
-            "x_dim": 60,
-            "y_dim": 60,
-            "n_cities": 17,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_9
-            "n_agents": 100,
-            "x_dim": 80,
-            "y_dim": 120,
-            "n_cities": 21,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_10
-            "n_agents": 100,
-            "x_dim": 100,
-            "y_dim": 80,
-            "n_cities": 25,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_11
-            "n_agents": 200,
-            "x_dim": 100,
-            "y_dim": 100,
-            "n_cities": 29,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_12
-            "n_agents": 200,
-            "x_dim": 150,
-            "y_dim": 150,
-            "n_cities": 33,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_13
-            "n_agents": 400,
-            "x_dim": 150,
-            "y_dim": 150,
-            "n_cities": 37,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-        {
-            # Test_14
-            "n_agents": 425,
-            "x_dim": 158,
-            "y_dim": 158,
-            "n_cities": 41,
-            "max_rails_between_cities": 2,
-            "max_rail_pairs_in_city": 2,
-            "malfunction_rate": 1 / 200,
-            "seed": 0
-        },
-    ]
+    env_params = ENV_PARAMS
 
     obs_params = {
         "observation_tree_depth": training_params.obstreedepth,  # default is 2
         "observation_radius": 10,  # normalization constant for normalizing observations to make rf more stable across runs (not actually a radius)
-        "observation_max_path_depth": 30  # is used in the path predictor and ultimately to add info for agent a where b and c... will probably be, the predictor here only returns n locations of the predicted agent's b and c... position
+        "observation_max_path_depth": 30,  # is used in the path predictor and ultimately to add info for agent a where b and c... will probably be, the predictor here only returns n locations of the predicted agent's b and c... position
     }
 
     def check_env_config(id):
         if id >= len(env_params) or id < 0:
-            print("\n🛑 Invalid environment configuration, only Test_0 to Test_{} are supported.".format(len(env_params) - 1))
+            print(
+                "\n🛑 Invalid environment configuration, only Test_0 to Test_{} are supported.".format(
+                    len(env_params) - 1
+                )
+            )
             exit(1)
-
 
     check_env_config(training_params.training_env_config)
     check_env_config(training_params.evaluation_env_config)
@@ -689,27 +766,50 @@ if __name__ == "__main__":
         check_env_config(training_params.highest_level)  # Check highest level validity
 
         # Get list of training environments for progressive training
-        training_env_params_list = [Namespace(**env_params[i]) for i in range(training_params.highest_level + 1)]
+        training_env_params_list = [
+            Namespace(**env_params[i]) for i in range(training_params.highest_level + 1)
+        ]
 
-        print("\nTraining environment parameters up to Test_{}:".format(training_params.highest_level))
+        print(
+            "\nTraining environment parameters up to Test_{}:".format(
+                training_params.highest_level
+            )
+        )
         for i, params in enumerate(training_env_params_list):
             print(f"Test_{i}:")
             pprint(vars(params))
     else:
         # Default to single environment training
-        training_env_params_list = [Namespace(**env_params[training_params.training_env_config])]
+        training_env_params_list = [
+            Namespace(**env_params[training_params.training_env_config])
+        ]
 
-        print("\nTraining environment parameters (Test_{}):".format(training_params.training_env_config))
+        print(
+            "\nTraining environment parameters (Test_{}):".format(
+                training_params.training_env_config
+            )
+        )
         pprint(vars(training_env_params_list[0]))
 
-    evaluation_env_params = Namespace(**env_params[training_params.evaluation_env_config])
+    evaluation_env_params = Namespace(
+        **env_params[training_params.evaluation_env_config]
+    )
 
-    print("\nEvaluation environment parameters (Test_{}):".format(training_params.evaluation_env_config))
+    print(
+        "\nEvaluation environment parameters (Test_{}):".format(
+            training_params.evaluation_env_config
+        )
+    )
     pprint(vars(evaluation_env_params))
     print("\nObservation parameters:")
     pprint(obs_params)
 
     os.environ["OMP_NUM_THREADS"] = str(training_params.num_threads)
 
-    print('\n🚂 Training policy: {}'.format(training_params.policy))
-    train_agent(training_params, training_env_params_list, evaluation_env_params, Namespace(**obs_params))
+    print("\n🚂 Training policy: {}".format(training_params.policy))
+    train_agent(
+        training_params,
+        training_env_params_list,
+        evaluation_env_params,
+        Namespace(**obs_params),
+    )
