@@ -84,7 +84,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         # if not runname or runname == 'flatland-rl_run123':
         #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
         wandb.init(
-            mode='online', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
+            mode='offline', # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
             sync_tensorboard=True, 
             name=name,
             project='Reinforce_TrainReScheduling-reinforcement_learning')
