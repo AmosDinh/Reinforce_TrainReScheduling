@@ -1,8 +1,9 @@
 # Reinforce_TrainReScheduling
 
-# Ziel
+# Goal
+This repository represents an attempt at tackeling the Vehicle Rescheduling Problem as modeled by the [flatland challenge](https://www.aicrowd.com/challenges/flatland) 
+We seek to solve the partial problem of minimizing the time it takes to bring all the agents to their respective targets.
 
-We seek to minimize the time it takes to bring all the agents to their respective target.
 
 # Usage
     git clone https://github.com/AmosDinh/Reinforce_TrainReScheduling
