@@ -9,7 +9,7 @@ metric:
     goal: maximize
 parameters:
     n_episodes:
-        values: [10000]
+        values: [100000]
     hidden_size:
         # default: 256
         values: [512]  
@@ -20,7 +20,7 @@ parameters:
         # default: 32
         values: [128]
     training_env_config:
-        values: [2]
+        values: [0]
     policy:
         values: ["sarsa"]
     obstreedepth:

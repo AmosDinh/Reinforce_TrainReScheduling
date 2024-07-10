@@ -1,7 +1,7 @@
 # This sweep file can be used to run hyper-parameter search using Weight & Biases tools
 # See: https://docs.wandb.com/sweeps
 
-# wandb sweep sweep_policies.yaml
+# wandb sweep sweeps/sweep_policies.yaml
 program: reinforcement_learning/multi_agent_training.py
 method: grid
 metric:

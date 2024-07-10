@@ -7,7 +7,7 @@ ENV_PARAMS = [
         "n_cities": 2,
         "max_rails_between_cities": 2,
         "max_rail_pairs_in_city": 2,
-        "malfunction_rate": 1 / 200,
+        "malfunction_rate": 1/200,
         "seed": 0,
     },
     { 

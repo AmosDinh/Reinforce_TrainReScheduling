@@ -76,7 +76,7 @@ def create_rail_env(env_params, tree_observation):
 
 
 def train_agent(train_params, train_env_params, eval_env_params, obs_params):
-    name=f'sweep_dddqn_final_{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}_nstep_{train_params.n_step}_gamma_{train_params.gamma}'
+    name=f'sweep_actual_final_sarsa_dqn_{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}_nstep_{train_params.n_step}_gamma_{train_params.gamma}'
 
     try:
         import wandb
@@ -303,7 +303,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
                     # Only learn from timesteps where somethings happened
                     learn_timer.start()
                     if not training_params.policy=='baseline':
-                        if not not train_params.checkpoint:
+                        if not train_params.checkpoint:
                             policy.step(agent_prev_obs[agent], agent_prev_action[agent], all_rewards[agent], agent_obs[agent], action_dict[agent],  done[agent])
                     learn_timer.end()
                     if not use_graph_observator:
@@ -447,6 +447,8 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         wandb.log({"timer/learn": learn_timer.get(), "step": episode_idx})
         wandb.log({"timer/preproc": preproc_timer.get(), "step": episode_idx})
         wandb.log({"timer/total": training_timer.get_current(), "step": episode_idx})
+     
+
 
 
 def format_action_prob(action_probs):
@@ -632,6 +634,7 @@ if __name__ == "__main__":
         obs_params['observation_tree_depth'] = 1
 
     print('\n🚂 Training policy: {}'.format(training_params.policy))
+    training_params.policy = 'sarsa'
     train_agent(training_params, Namespace(**training_env_params), Namespace(**evaluation_env_params), Namespace(**obs_params))
 
     #python reinforcement_learning/multi_agent_training.py --n_episodes=100 --hidden_size=512 --buffer_size=128 --training_env_config=0 --policy="double_dueling_dqn" --obstreedepth=2 --checkpoint="checkpoints/your_checkpoint --render=True --renderspeed=100
