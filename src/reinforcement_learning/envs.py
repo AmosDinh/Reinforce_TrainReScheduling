@@ -7,7 +7,7 @@ ENV_PARAMS = [
         "n_cities": 2,
         "max_rails_between_cities": 2,
         "max_rail_pairs_in_city": 2,
-        "malfunction_rate": 1/200,
+        "malfunction_rate": 0,
         "seed": 0,
     },
     { 
@@ -18,7 +18,7 @@ ENV_PARAMS = [
         "n_cities": 2,
         "max_rails_between_cities": 2,
         "max_rail_pairs_in_city": 2,
-        "malfunction_rate": 1 / 200,
+        "malfunction_rate": 1 / 100,
         "seed": 0,
     },
     {
@@ -162,6 +162,17 @@ ENV_PARAMS = [
         "max_rails_between_cities": 2,
         "max_rail_pairs_in_city": 2,
         "malfunction_rate": 1 / 200,
+        "seed": 0,
+    },
+     {
+        # Test_15, similar to Test_0 but with 1/200 malfunction rate
+        "n_agents": 7,
+        "x_dim": 30,
+        "y_dim": 30,
+        "n_cities": 2,
+        "max_rails_between_cities": 2,
+        "max_rail_pairs_in_city": 2,
+        "malfunction_rate": 1/200,
         "seed": 0,
     },
 ]

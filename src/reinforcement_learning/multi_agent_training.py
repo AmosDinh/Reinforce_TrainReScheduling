@@ -226,7 +226,6 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         reset_timer.start()
         if train_params.checkpoint:
             obs, info = train_env.reset(regenerate_rail=True, regenerate_schedule=True, random_seed=random_seed)
-            random_seed = episode_idx +1
         else:
             obs, info = train_env.reset(regenerate_rail=True, regenerate_schedule=True)
         reset_timer.end()
@@ -240,7 +239,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         agent_prev_action = [2] * n_agents
         update_values = [False] * n_agents
 
-        if train_params.render and random_seed<episode_idx:
+        if train_params.render:
             env_renderer.set_new_rail()
 
         score = 0
@@ -287,7 +286,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
             step_timer.end()
 
             # Render an episode at some interval
-            if train_params.render and random_seed<episode_idx:
+            if train_params.render:
                 if train_params.renderspeed!=0:
                     time.sleep(train_params.renderspeed / 1000)
                 env_renderer.render_env(
@@ -634,7 +633,7 @@ if __name__ == "__main__":
         obs_params['observation_tree_depth'] = 1
 
     print('\n🚂 Training policy: {}'.format(training_params.policy))
-    training_params.policy = 'sarsa'
+    training_params.checkpoints = 'checkpoints/sweep_actual_final_sarsa_dqn_sarsa_env_0_obstreedepth_2_hs_512_nstep_1_gamma_0.99240710160404-14200.pth'
     train_agent(training_params, Namespace(**training_env_params), Namespace(**evaluation_env_params), Namespace(**obs_params))
 
-    #python reinforcement_learning/multi_agent_training.py --n_episodes=100 --hidden_size=512 --buffer_size=128 --training_env_config=0 --policy="double_dueling_dqn" --obstreedepth=2 --checkpoint="checkpoints/your_checkpoint --render=True --renderspeed=100
+    #python reinforcement_learning/multi_agent_training.py --n_episodes=10 --hidden_size=512 --buffer_size=128 --training_env_config=15 --policy="sarsa" --obstreedepth=2 --checkpoint="checkpoints/sweep_actual_final_sarsa_dqn_sarsa_env_0_obstreedepth_2_hs_512_nstep_1_gamma_0.99240710160404-14200.pth" --render=True --renderspeed=100
