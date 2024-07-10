@@ -10,7 +10,7 @@ ENV_PARAMS = [
         "malfunction_rate": 1 / 200,
         "seed": 0,
     },
-    {
+    { 
         # Test_1
         "n_agents": 10,
         "x_dim": 30,

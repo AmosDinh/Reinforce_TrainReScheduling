@@ -19,6 +19,9 @@ We seek to solve the partial problem of minimizing the time it takes to bring al
 
     python execute_local_sweep.py sweeps/sweep_policies.yaml
 
+# Visualize checkpoint
+    python reinforcement_learning/multi_agent_training.py --n_episodes=100 --hidden_size=512 --buffer_size=128 --training_env_config=0 --policy="double_dueling_dqn" --obstreedepth=2 --checkpoint="checkpoints/your_checkpoint --render=True --renderspeed=100
+
 # Other sweeps
 Sweeps (`src/sweeps/*`) contain hyperparamter grid searches. We use it with Weights & Biases
  (https://wandb.ai/) for online tracking but the sweeps can be run locally with `python src/execute_local_sweep.py sweeps/my_sweep_file.yaml`.

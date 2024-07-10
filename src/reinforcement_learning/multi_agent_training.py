@@ -5,6 +5,7 @@ import sys
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from pprint import pprint
+import time
 
 import psutil
 from flatland.utils.rendertools import RenderTool
@@ -75,7 +76,7 @@ def create_rail_env(env_params, tree_observation):
 
 
 def train_agent(train_params, train_env_params, eval_env_params, obs_params):
-    name=f'sweep_expected_sarsa_{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}_nstep_{train_params.n_step}_gamma_{train_params.gamma}'
+    name=f'sweep_dddqn_final_{train_params.policy}_env_{train_params.training_env_config}_obstreedepth_{train_params.obstreedepth}_hs_{train_params.hidden_size}_nstep_{train_params.n_step}_gamma_{train_params.gamma}'
 
     try:
         import wandb
@@ -172,7 +173,8 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         policy = ExpectedSARSA(state_size, action_size, train_params, evaluation_mode=False, expected_sarsa_temperature=train_params.expected_sarsa_temperature)
 
   
-    
+    if train_params.checkpoint:
+        policy.qnetwork_local = torch.load(train_params.checkpoint)
 
 
     # Loads existing replay buffer
@@ -211,7 +213,8 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         checkpoint_interval,
         training_id
     ))
-
+    if train_params.checkpoint:
+        random_seed = 0
     for episode_idx in range(n_episodes):
         step_timer = Timer()
         reset_timer = Timer()
@@ -221,7 +224,11 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
 
         # Reset environment
         reset_timer.start()
-        obs, info = train_env.reset(regenerate_rail=True, regenerate_schedule=True)
+        if train_params.checkpoint:
+            obs, info = train_env.reset(regenerate_rail=True, regenerate_schedule=True, random_seed=random_seed)
+            random_seed = episode_idx +1
+        else:
+            obs, info = train_env.reset(regenerate_rail=True, regenerate_schedule=True)
         reset_timer.end()
 
         # Init these values after reset()
@@ -233,7 +240,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         agent_prev_action = [2] * n_agents
         update_values = [False] * n_agents
 
-        if train_params.render:
+        if train_params.render and random_seed<episode_idx:
             env_renderer.set_new_rail()
 
         score = 0
@@ -280,7 +287,9 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
             step_timer.end()
 
             # Render an episode at some interval
-            if train_params.render and episode_idx % checkpoint_interval == 0:
+            if train_params.render and random_seed<episode_idx:
+                if train_params.renderspeed!=0:
+                    time.sleep(train_params.renderspeed / 1000)
                 env_renderer.render_env(
                     show=True,
                     frames=False,
@@ -294,7 +303,8 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
                     # Only learn from timesteps where somethings happened
                     learn_timer.start()
                     if not training_params.policy=='baseline':
-                        policy.step(agent_prev_obs[agent], agent_prev_action[agent], all_rewards[agent], agent_obs[agent], action_dict[agent],  done[agent])
+                        if not not train_params.checkpoint:
+                            policy.step(agent_prev_obs[agent], agent_prev_action[agent], all_rewards[agent], agent_obs[agent], action_dict[agent],  done[agent])
                     learn_timer.end()
                     if not use_graph_observator:
                         agent_prev_obs[agent] = agent_obs[agent].copy()
@@ -330,6 +340,11 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         completion = tasks_finished / max(1, train_env.get_num_agents())
         normalized_score = score / (max_steps * train_env.get_num_agents()) #
 
+        if train_params.checkpoint and completion>0.9:
+            if episode_idx < random_seed:
+                random_seed = episode_idx
+                print(f"REPLAY")
+
         # if no actions were ever taken possibly due to malfunction and so 
         # - `actions_taken` is empty [], 
         # - `np.sum(action_count)` is 0
@@ -349,14 +364,14 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         smoothed_completion = smoothed_completion * smoothing + completion * (1.0 - smoothing)
 
         # Print logs
-        if episode_idx % checkpoint_interval == 0 and not training_params.policy=='baseline':
+        if episode_idx % checkpoint_interval == 0 and not training_params.policy=='baseline' and not train_params.checkpoint:
             torch.save(policy.qnetwork_local, f'./checkpoints/{name}' + training_id + '-' + str(episode_idx) + '.pth')
 
             if save_replay_buffer:
                 policy.save_replay_buffer(f'./replay_buffers/{name}' + training_id + '-' + str(episode_idx) + '.pkl')
 
-            if train_params.render:
-                env_renderer.close_window()
+            # if train_params.render:
+            #     env_renderer.close_window()
         # ⏱️ Rst 0.023st 0 Stp 0.076sp 0.0 Lrn 0.241sn 0.1 Prc 0.022sc 0.0 Tot 68.886s 
         print(
             '\r🚂 Ep {}'
@@ -533,6 +548,15 @@ if __name__ == "__main__":
     parser.add_argument("--n_step", help="Number of reward steps to accumulate (e.g for n-step sarsa)", default=1, type=int)
     parser.add_argument("--use_graph_observator", help="custom graph observator", default=False, type=bool)
     parser.add_argument("--num_gnn_layers", help="number of gnn layers", default=1, type=int)
+    parser.add_argument(
+        "--renderspeed",
+        help="render speed for visualization in milliseconds",
+        default=0,
+        type=int,
+    )  # erlaubt es langsamer zu rendern
+    parser.add_argument(
+     "--checkpoint", help="checkpoint to load", default="", type=str
+    )
 
     training_params = parser.parse_args()
 
@@ -609,3 +633,5 @@ if __name__ == "__main__":
 
     print('\n🚂 Training policy: {}'.format(training_params.policy))
     train_agent(training_params, Namespace(**training_env_params), Namespace(**evaluation_env_params), Namespace(**obs_params))
+
+    #python reinforcement_learning/multi_agent_training.py --n_episodes=100 --hidden_size=512 --buffer_size=128 --training_env_config=0 --policy="double_dueling_dqn" --obstreedepth=2 --checkpoint="checkpoints/your_checkpoint --render=True --renderspeed=100
