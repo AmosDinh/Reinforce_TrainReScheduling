@@ -19,8 +19,8 @@ We seek to solve the partial problem of minimizing the time it takes to bring al
 
     python execute_local_sweep.py sweeps/sweep_policies.yaml
 
-# Visualize checkpoint
-    python reinforcement_learning/multi_agent_training.py --n_episodes=100 --hidden_size=512 --buffer_size=128 --training_env_config=0 --policy="double_dueling_dqn" --obstreedepth=2 --checkpoint="checkpoints/your_checkpoint --render=True --renderspeed=100
+# Visualize a checkpoint
+    python reinforcement_learning/multi_agent_training.py --n_episodes=10 --hidden_size=512 --buffer_size=128 --training_env_config=15 --policy="sarsa" --obstreedepth=2 --checkpoint="checkpoints/sweep_actual_final_sarsa_dqn_sarsa_env_0_obstreedepth_2_hs_512_nstep_1_gamma_0.99240710160404-14200.pth" --render=True --renderspeed=100
 
 # Other sweeps
 Sweeps (`src/sweeps/*`) contain hyperparamter grid searches. We use it with Weights & Biases
