@@ -1,3 +1,17 @@
+from utils.deadlock_check import check_if_all_blocked
+from utils.timer import Timer
+from utils.observation_utils import normalize_observation
+from reinforcement_learning.deep_policy import (
+    DoubleDuelingDQN,
+    DQN,
+    DoubleDQN,
+    DuelingDQN,
+    SARSA,
+)
+from torch.utils.tensorboard import SummaryWriter
+
+from envs import ENV_PARAMS
+
 import math
 import multiprocessing
 import os
@@ -25,24 +39,18 @@ from flatland.utils.rendertools import RenderTool
 base_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(base_dir))
 
-from reinforcement_learning.envs import ENV_PARAMS
-from utils.deadlock_check import check_if_all_blocked
-from utils.timer import Timer
-from utils.observation_utils import normalize_observation
-from reinforcement_learning.deep_policy import DoubleDuelingDQN, DQN, DoubleDQN, DuelingDQN, SARSA
-from torch.utils.tensorboard import SummaryWriter
-
-from envs import ENV_PARAMS
 
 try:
     import wandb
 
     # runname = 'flatland-rl_run123' # specify your run name
     # if not runname or runname == 'flatland-rl_run123':
-    #     runname = 'flatland-rl_run_' + datetime.now().strftime("%Y%m%d%H%M%S")
+    #     runname = 'flatland-rl_run_' + \
+    # datetime.now().strftime("%Y%m%d%H%M%S")
 
     wandb.init(
-        mode="disabled",  # specify if you want to log to W&B 'disabled', 'online' or 'offline' (offline logs to local file)
+        mode="disabled",  # specify if you want to log to W&B 'disabled',
+        # 'online' or 'offline' (offline logs to local file)
         sync_tensorboard=True,
         # name=runname,
         project="Reinforce_TrainReScheduling-reinforcement_learning",
@@ -66,25 +74,54 @@ def eval_policy(
     allow_caching,
     renderspeed,
     use_speed_profiles,
-    policy
+    policy,
 ):
     # Evaluation is faster on CPU (except if you use a really huge policy)
-    parameters = {"use_gpu": False, "n_step":1,"gamma":0.99,'use_graph_observator':False}
+    parameters = {
+        "use_gpu": False,
+        "n_step": 1,
+        "gamma": 0.99,
+        "use_graph_observator": False,
+    }
 
-
-    if policy == 'dqn':
-        policy = DQN(state_size, action_size, Namespace(**parameters), evaluation_mode=True)
-    elif policy == 'double_dqn':
-        policy = DoubleDQN(state_size, action_size, Namespace(**parameters), evaluation_mode=True)
-    elif policy == 'dueling_dqn':
-        policy = DuelingDQN(state_size, action_size, Namespace(**parameters), evaluation_mode=True)
-    elif policy == 'double_dueling_dqn':
-        policy = DoubleDuelingDQN(state_size, action_size, Namespace(**parameters), evaluation_mode=True)
-    elif policy == 'sarsa':
-        policy = SARSA(state_size, action_size, Namespace(**parameters), evaluation_mode=True)
-        print('SARSA')
-    else: 
-        raise Exception('Choose policy type')
+    if policy == "dqn":
+        policy = DQN(
+            state_size,
+            action_size,
+            Namespace(**parameters),
+            evaluation_mode=True,
+        )
+    elif policy == "double_dqn":
+        policy = DoubleDQN(
+            state_size,
+            action_size,
+            Namespace(**parameters),
+            evaluation_mode=True,
+        )
+    elif policy == "dueling_dqn":
+        policy = DuelingDQN(
+            state_size,
+            action_size,
+            Namespace(**parameters),
+            evaluation_mode=True,
+        )
+    elif policy == "double_dueling_dqn":
+        policy = DoubleDuelingDQN(
+            state_size,
+            action_size,
+            Namespace(**parameters),
+            evaluation_mode=True,
+        )
+    elif policy == "sarsa":
+        policy = SARSA(
+            state_size,
+            action_size,
+            Namespace(**parameters),
+            evaluation_mode=True,
+        )
+        print("SARSA")
+    else:
+        raise Exception("Choose policy type")
 
     policy.qnetwork_local = torch.load(checkpoint)
 
@@ -136,7 +173,11 @@ def eval_policy(
             max_rail_pairs_in_city=max_rail_pairs_in_city,
         ),
         # schedule_generator=sparse_schedule_generator(speed_profiles),
-        line_generator=sparse_line_generator(speed_profiles) if use_speed_profiles else sparse_line_generator(),
+        line_generator=(
+            sparse_line_generator(speed_profiles)
+            if use_speed_profiles
+            else sparse_line_generator()
+        ),
         number_of_agents=n_agents,
         malfunction_generator_and_process_data=malfunction_from_params(
             malfunction_parameters
@@ -170,7 +211,6 @@ def eval_policy(
         )
         step_timer.end()
 
-        agent_obs = [None] * env.get_num_agents()
         score = 0.0
 
         if render:
@@ -185,7 +225,8 @@ def eval_policy(
 
         for step in range(max_steps - 1):
             if allow_skipping and check_if_all_blocked(env):
-                # FIXME why -1? bug where all agents are "done" after max_steps!
+                # FIXME why -1? bug where all agents are
+                # "done" after max_steps!
                 skipped = max_steps - step - 1
                 final_step = max_steps - 2
                 n_unfinished_agents = sum(
@@ -238,7 +279,6 @@ def eval_policy(
 
                 if step == 5:
                     Image.fromarray(img).show()
-                    awdwad = 3
 
             step_timer.start()
             obs, all_rewards, done, info = env.step(action_dict)
@@ -295,7 +335,8 @@ def eval_policy(
             "☑️  Score: {:.3f} \tDone: {:.1f}% \tNb steps: {:.3f} "
             "\t🍭 Seed: {}"
             "\t🚉 Env: {:.3f}s  "
-            "\t🤖 Agent: {:.3f}s (per step: {:.3f}s) \t[preproc: {:.3f}s \tinfer: {:.3f}s]"
+            "\t🤖 Agent: {:.3f}s (per step: {:.3f}s)"
+            " \t[preproc: {:.3f}s \tinfer: {:.3f}s]"
             "{}{}".format(
                 normalized_score,
                 completion * 100.0,
@@ -324,7 +365,7 @@ def evaluate_agents(
     renderspeed,
     use_speed_profiles,
     policy,
-    specific_env=-1
+    specific_env=-1,
 ):
     nb_threads = 1
     eval_per_thread = n_evaluation_episodes
@@ -341,7 +382,11 @@ def evaluate_agents(
     )
 
     if total_nb_eval != n_evaluation_episodes:
-        print("(Rounding up from {} to fill all cores)".format(n_evaluation_episodes))
+        print(
+            "(Rounding up from {} to fill all cores)".format(
+                n_evaluation_episodes
+            )
+        )
 
     # Observation parameters need to match the ones used during training!
 
@@ -400,7 +445,7 @@ def evaluate_agents(
                     allow_caching,
                     renderspeed,
                     use_speed_profiles,
-                    policy
+                    policy,
                 )
             )
         else:
@@ -421,7 +466,7 @@ def evaluate_agents(
                             allow_caching,
                             renderspeed,
                             use_speed_profiles,
-                            policy
+                            policy,
                         )
                         for seed in range(total_nb_eval)
                     ],
@@ -442,7 +487,8 @@ def evaluate_agents(
         print("-" * 200)
 
         print(
-            "✅ Score: {:.3f} \tDone: {:.1f}% \tNb steps: {:.3f} \tAgent total: {:.3f}s (per step: {:.3f}s)".format(
+            "✅ Score: {:.3f} \tDone: {:.1f}% \tNb steps:"
+            " {:.3f} \tAgent total: {:.3f}s (per step: {:.3f}s)".format(
                 np.mean(scores),
                 np.mean(completions) * 100.0,
                 np.mean(nb_steps),
@@ -452,13 +498,18 @@ def evaluate_agents(
         )
 
         print(
-            "⏲️  Agent sum: {:.3f}s \tEnv sum: {:.3f}s \tTotal sum: {:.3f}s".format(
-                np.sum(times), np.sum(step_times), np.sum(times) + np.sum(step_times)
+            "⏲️  Agent sum: {:.3f}s \tEnv sum: {:.3f}s"
+            " \tTotal sum: {:.3f}s".format(
+                np.sum(times),
+                np.sum(step_times),
+                np.sum(times) + np.sum(step_times),
             )
         )
 
         wandb.log({"evaluation/number_steps": np.mean(nb_steps), "step": i})
-        wandb.log({"evaluation/perc_done": np.mean(completions) * 100.0, "step": i})
+        wandb.log(
+            {"evaluation/perc_done": np.mean(completions) * 100.0, "step": i}
+        )
         wandb.log({"evaluation/score": np.mean(scores), "step": i})
         wandb.log({"evaluation/duration": np.mean(times), "step": i})
 
@@ -477,7 +528,8 @@ if __name__ == "__main__":
     )
 
     # TODO
-    # parser.add_argument("-e", "--evaluation_env_config", help="evaluation config id (eg 0 for Test_0)", default=0, type=int)
+    # parser.add_argument("-e", "--evaluation_env_config", help="evaluation
+    # config id (eg 0 for Test_0)", default=0, type=int)
 
     parser.add_argument(
         "--use_gpu",
@@ -487,7 +539,10 @@ if __name__ == "__main__":
         default=True,
     )
     parser.add_argument(
-        "--render", help="render a single episode", action="store_true", default=False
+        "--render",
+        help="render a single episode",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
         "--allow_skipping",
@@ -507,11 +562,7 @@ if __name__ == "__main__":
         default=0,
         type=int,
     )  # erlaubt es langsamer zu rendern
-    parser.add_argument(
-        "--use_speed_profiles",
-        default=False,
-        type=bool
-    )
+    parser.add_argument("--use_speed_profiles", default=False, type=bool)
     parser.add_argument(
         "--policy",
         help="policy of checkpoint",
@@ -522,9 +573,8 @@ if __name__ == "__main__":
         help="env number",
         default=-1,
         type=int,
-    ) 
+    )
     args = parser.parse_args()
-
 
     os.environ["OMP_NUM_THREADS"] = str(1)
     evaluate_agents(
@@ -537,7 +587,10 @@ if __name__ == "__main__":
         renderspeed=args.renderspeed,
         use_speed_profiles=args.use_speed_profiles,
         policy=args.policy,
-        specific_env=args.specific_env
+        specific_env=args.specific_env,
     )
 
-    # python reinforcement_learning/evaluate_agent.py -f="checkpoints/sweep_sarsa_final_sarsa_env_2_obstreedepth_2_hs_512_nstep_1_gamma_0.99240709110204-9900.pth" --render --allow_skipping --allow_caching --specific_env=2 --policy="sarsa" --renderspeed=50
+    # python reinforcement_learning/evaluate_agent.py
+    # -f="checkpoints/sweep_sarsa_final_sarsa_env_2_obstreedepth_2_hs_512_nstep_1_gamma_
+    # 0.99240709110204-9900.pth" --render --allow_skipping --allow_caching
+    # --specific_env=2 --policy="sarsa" --renderspeed=50

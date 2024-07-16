@@ -1,6 +1,7 @@
-import torch 
-import random 
+import torch
+import random
 import numpy as np
+
 
 def fix_random(seed):
     np.random.seed(seed)

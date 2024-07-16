@@ -6,7 +6,8 @@ class Timer(object):
     Utility to measure times.
 
     TODO:
-    - add "lap" method to make it easier to measure average time (+std) when measuring the same thing multiple times.
+    - add "lap" method to make it easier to measure average time (+std) when
+    measuring the same thing multiple times.
     """
 
     def __init__(self):
