@@ -1,16 +1,3 @@
-from utils.timer import Timer
-from utils.observation_utils import normalize_observation
-from reinforcement_learning.deep_policy import (
-    DQN,
-    DoubleDQN,
-    DuelingDQN,
-    DoubleDuelingDQN,
-    SARSA,
-    ExpectedSARSA,
-)
-
-from envs import ENV_PARAMS
-
 from datetime import datetime
 import os
 import random
@@ -33,14 +20,18 @@ from flatland.envs.line_generators import sparse_line_generator
 from flatland.envs.observations import TreeObsForRailEnv
 from GraphObsForRailEnv import GraphObsForRailEnv
 
-from flatland.envs.malfunction_generators import (
-    ParamMalfunctionGen,
-    MalfunctionParameters,
-)
+from flatland.envs.malfunction_generators import ParamMalfunctionGen, MalfunctionParameters
 from flatland.envs.predictions import ShortestPathPredictorForRailEnv
 
 base_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(base_dir))
+
+from reinforcement_learning.envs import ENV_PARAMS
+from utils.timer import Timer
+from utils.observation_utils import normalize_observation
+from reinforcement_learning.deep_policy import DQN, DoubleDQN, DuelingDQN, DoubleDuelingDQN, SARSA, ExpectedSARSA
+
+from envs import ENV_PARAMS
 
 
 """
@@ -254,7 +245,7 @@ def train_agent(train_params, train_env_params, eval_env_params, obs_params):
         )
     )
     if train_params.checkpoint:
-        random_seed = 0
+        random_seed = 47
     for episode_idx in range(n_episodes):
         step_timer = Timer()
         reset_timer = Timer()
@@ -861,8 +852,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--policy",
-        help="Policy to use: options: dqn, double_dqn, " //
-        "dueling_dqn, double_dueling_dqn, sarsa, expected_sarsa",
+        help="""Policy to use: options: dqn, double_dqn,
+        "dueling_dqn, double_dueling_dqn, sarsa, expected_sarsa""",
         type=str,
     )
     parser.add_argument(
