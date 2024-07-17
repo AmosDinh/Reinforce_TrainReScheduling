@@ -1,6 +1,6 @@
 # Reinforce_TrainReScheduling
 
-If there are errors in the execution please use the commit 7654dff
+If there are errors in the execution please use the commit 7654dff.
 
 # Goal
 This repository represents an attempt at tackeling the Vehicle Rescheduling Problem as modeled by the [flatland challenge](https://www.aicrowd.com/challenges/flatland) 
